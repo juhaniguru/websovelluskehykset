@@ -12,7 +12,11 @@ Frameworkit ovat työkaluja (työkalupakkeja tai "raameja"), jotka sisältävät
 
 Web-ohjelmointi-frameworkeja on useita useille eri ohjelmointikielille.
 
+
+
 ## ESIMERKKEJÄ ERI FRAMEWORKEISTA
+
+
 
 :::info Plussat ja miinukset
 
@@ -201,11 +205,20 @@ Samat kuin CakePHP:ssä
 
 ### Q&A
 
-:::info Miksi niin monta eri työkalua, joissa on samat ominaisuudet
+:::info Miksi niin monta eri työkalua, joissa on samat ominaisuudet?
 
 Kaikki eivät pidä samoista ohjelmointikielistä ja haluavavat samanlaisen työkalun omalle lempikielelleen. Sitä, miksi yhdellä ohjelmointikielellä on useita eri web-frameworkeja, pitäisi kysyä niiden kehittäjiltä itseltään. <i>Toiset tykkäävät valinnanvapaudestesta ja toiset hyvin virtaviivaisesta kiskoja pitkin kulkevasta työtavasta</i>.
 
 :::
+
+:::info Onko tässä kaikki?
+
+Ei todellakaan ole. Web-ohjelmointisovelluskehyksiä on todella monia muitakin, mutta näitä olen käyttänyt vuosien varrella töissä. 
+
+Hyvä puoli frameworkeissa on se, että ne on tehty usein samoja / samankaltaisia suunnittelumenetelmiä ja arkkitehtuureja noudattaen. Kun osaat arkkitehtuurin ja ohjelmointikielen frameworkin takana, voit oppia käyttämään uutta frameworkia jopa tunneissa.
+
+:::
+
 
 
 
