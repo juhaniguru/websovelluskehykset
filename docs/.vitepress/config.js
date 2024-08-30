@@ -8,6 +8,7 @@ module.exports = {
             {text: 'Info', link: '/info/'},
             {text: 'Kertaus', link: '/recap/'},
             { text: 'Sovelluskehykset', link: '/frameworks/' },
+            { text: 'Arkkitehtuurit', link: '/architectures/' },
             
             
             
