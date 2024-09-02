@@ -162,6 +162,12 @@ Jos emme käyttäisi enkapsulointia, joutuisimme välittämään drive-metodille
 
 Abstraktointi olio-ohjelmoinnissa tarkoittaa käytännössä sitä, että esim. metodia voi kutusa tietämättä, miten se on konkreettisesti toteutettu
 
+:::tip tä?
+
+Jos osaat ajaa autoa tietämättä, miten sen moottori ja voimansiirto toimii, käytät hyväksesi abstraktiota. Tässä tapauksessa riittää, että tiedät, miten kaasua, jarrua, vaihteita ja muita auton hallintalaitteita käytetään. Ne ovat API auton moottoriin ja voimansiirtoon - asioihin, joita ilman et voi ajaa autoa, mutta sinun ei tarvitse tietää, miten ne on toteutettu.
+
+:::
+
 ```py
 
 class DataSource:

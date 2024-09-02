@@ -1,12 +1,22 @@
 # YLEISIMMÄT SOVELLUSKEHYSTEN PERIAATTEET JA ARKKITEHTUURIT
 
+<h2><i>"Jos softa olisi talo, rakenna se niin, ettei talosta tarvitse hajoittaa koko seinää, jos ikkuna tai ovi pitää vaihtaa."</i></h2>
+
+:::tip tä?
+
+Arkkitehtuureilla ja suunnitelumenetelmillä pystymme palottelemaan softan niin pieniin modulaarisiin osiin, ettei mitään tarvitse koodata uudestaan / olemassa olevaa koodia hajottaa. Pystymme siis koodaamaan toisenlaisen toteutuksen ominaisuudesta ja korvaamaan vanhan sillä hajoittamatta vanhaa
+
+:::
+
 Suunnittelumenetelmiä ja arkkitehtuureja on olemassa hyvin paljon ja ne voivat olla sovellusalakohtaisia. Esimerkiksi reaaliaikasovelluksissa voidaan käyttää eri suunnittelumalleja ja periaatteita kuin pyyntö/vastaus-periaatteella toimivassa web-sovelluksessa. Myös mobiilisovelluksissa ja työpöytäsovelluksissa voidaan käyttää eri suunnittelumalleja kuin web-sovelluksissa.
 
 <strong>Tällä opintojaksolla keskitytään web-ohjelmoinnin ja web-sovelluskehysten yleisimpiin suunnitetlumalleihin</strong>. Toteutamme suunnittelumalleja käyttäviä koodeja itse ilman frameworkia ja tutkimme myös, miten nämä suunnittelumallit voidaan ottaa käyttöön joissakin mainituissa frameworkeissa.
 
 ## MVC
 
-MVC-malli eli <strong>M</strong>odel<strong>V</strong>iew<strong>C</strong>ontroller koostuu kolmesta sovelluksen eri kerroksesta <strong>M</strong>odel eli mallikerros vastaa tietokannan tauluja. Jokaisesta tietokannan taulusta tehdään ohjelmaluokka (Class). <strong>C</strong>ontroller on ohjelmaluokka (Class) tai kasa funtkioita, jotka ottavat vastaan clientin web-palvelimelle lähettämät requestit, käsittelevät ne (se, miten pyynnöt käsitellään riippu routen tarkoituksesta) ja lähettää clientille responsen takaisin <strong>V</strong>iewinä eli käyttäjälle näkyvänä osana.
+
+
+MVC-malli eli <strong>M</strong>odel<strong>V</strong>iew<strong>C</strong>ontroller koostuu kolmesta sovelluksen eri kerroksesta <strong>M</strong>odel eli mallikerros vastaa tietokannan tauluja. Jokaisesta tietokannan taulusta tehdään ohjelmaluokka (Class). <strong>C</strong>ontroller on ohjelmaluokka (Class) tai kasa funtkioita, jotka ottavat vastaan clientin web-palvelimelle lähettämät requestit, käsittelevät ne (se, miten pyynnöt käsitellään riippuu routen tarkoituksesta) ja lähettää clientille responsen takaisin <strong>V</strong>iewinä eli käyttäjälle näkyvänä osana.
 
 ![architectures](./images/1.png)
 
@@ -21,7 +31,7 @@ MVC-malli eli <strong>M</strong>odel<strong>V</strong>iew<strong>C</strong>ontro
 
 - <strong>6. Palautetaan modelista 5. kohdan tulos takaisin Controlleriin</strong> Controller ottaa vastaan tietokantakyselyn tuloksen model-luokan instansseina. Kyselyä ei siis suoraan palauteta Controlleriin tietokannasta. Miksi? Tähän vastaus selviää hieman myöhemmin, kun teemme esimerkkejä
 
-- <strong>7. respone</strong> Koska Controller on kapelimestari, joka johtaa koko orkesteria, se vastaanottaa pyynnöt asiakkaalta ja palauttaa vastauksen asiakkaalle. Tässä kohtaa Cotrollerin tehtävä on palauttaa vastaus pyydetyssä formaatissa (html, xml, json)
+- <strong>7. response</strong> Koska Controller on kapelimestari, joka johtaa koko orkesteria, se vastaanottaa pyynnöt asiakkaalta ja palauttaa vastauksen asiakkaalle. Tässä kohtaa Cotrollerin tehtävä on palauttaa vastaus pyydetyssä formaatissa (html, xml, json)
 
 
 ### Kerrataan
@@ -36,7 +46,7 @@ Kun Model-luokka on tehnyt tehtävänsä, se palauttaa kyselyn tuloksen takaisin
 
 ![architectures](./images/2.png)
 
-Jokaisesta tietokannan taulusta tehdään oma Model-ohjelmaluokka (Class), jossa on kaikki tietokantataulun sarakkeet. Modeliin tulee tietokantaan liittyvä koodi (ns. data access layer). 
+Jokaisesta tietokannan taulusta tehdään oma Model-ohjelmaluokka (Class), jossa on kaikki tietokantataulun sarakkeet ja metodit, joilla data haetaan tietokannasta. Modeliin tulee tietokantaan liittyvä koodi (ns. data access layer). 
 
 :::tip Yksikkö vai monikko?
 
@@ -77,7 +87,7 @@ Jos et muista restful routingin perusperiaatteita, palauta ne mieleen <a href="h
 
 
 
-### Tuntiharjoitus
+### Tuntiharjoitus 1.
 
 :::tip Koodataan 
 
@@ -99,18 +109,172 @@ Jos luot, tai PyCharm luo, virtualenvin eri nimellä kuin venv, muista vaihtaa s
 
 
 
-1. Hae Githubista mallikoodi ja tietokanta
+1. Hae <a href="https://github.com/juhaniguru/sovelluskehykset_bad1.git">Githubista mallikoodi</a> ja tietokanta
 2. Asennus
-    * tarvitset tähän MySQL:n MariaDB:n (jotta tietokantayhteys saadaan päälle)
+    * tarvitset tähän MySQL:n tai MariaDB:n (jotta tietokantayhteys saadaan päälle)
     * tarvitset myös Pythonin
     * luo sen jälkeen virtualenv*: <i>python -m venv venv</i> tai macilla <i>python3 -m venv venv</i>
     * käynnistä sen jälkeen virtualenv*, **: <i>venv\Scripts\activate</i> tai macilla <i>source venv/bin/activate</i>
     * asennuksien jälkeen aja komento <i>python -m pip install -r requirements.txt</i> tai Macilla <i>python3 -m pip install -r requirements.txt</i>
 
-3. Varmista sen jälkeen, että sovellus lähtee päälle: <i>python app.py</i>
+3. Varmista sen jälkeen, että sovellus lähtee päälle: <i>python app_harjoitus1.py</i>
 4. Kun sovellus käynnistyy mene osoitteisiin <i>http://localhost:5000/api/users</i> ja <i>http://localhost:5000/api/products</i>
 ja paina mieleen vastauksen muoto (kentät ja niiden arvot). Asiakkaalle menevä vastaus ei saa koskaan muuttua, jos koodia konepellin alla refaktoroidaan.
 
+#### Tehtävänanto
+
+Nyt, kun palvelin lähtee päälle tee näin:
+
+1) Luo uusi PyCharm / Flask-projekti
+    * tämä voidaan tehdä tunnilla yhdessä
+2) Refaktoroi oo. app_harjoitus1.py:n koodi MVC-suunnittelumallin mukaiseksi
+3) <strong>Tietokannassa on myös products-taulu. Tee sille vastaavanlainen koodi kuin käyttäjien listaukselle MVC-mallin mukaisesti</strong>
+
+
+![architectures](./images/4.png)
+<small><i>Esimerkkikuva lopputuloksesta</i></small>
+
+:::info Huom
+
+Mallikuvasta puuttuu tarkoituksella User model, siitä on näytetty esimerkki aiemmin. Muista myös lisätä tarvittava metodi luokkaan, jolla teet tietokantakyselyn. 
+
+:::
+
+
+
+:::tip plussaa
+
+Käymme yhdessä tuntiharjoituksen läpi tunnilla. Jos palautat ennen läpikäyntiä tehtävän Moodleen, ja se on oikein, <strong>voit saada siitä lisäpisteitä opintojaksoa arvioitaessa</strong>.
+
+<strong>Yhteisen läpikäynnin jälkeen palautettuja tehtäviä ei hyväksytä ja, koska kyseessä on tuntiharjoitus, ainoastaan tunnille osallistuneiden tehtävät arvioidaan.</strong>
+
+
+
+:::
+
+### Q&A 1
+
+:::tip Huonosti tehdyssä mallissa on 7 riviä koodia, miksi ihmeessä koodi pitää jakaa moneen tiedostoon ja tehdä niin vaikeasti?
+
+- Pienessä sovelluksessa monimutkaisten suunnittelumallien käyttäminen tuntuukin turhalta ja yliampuvalta. Kun koodin tekee alusta asti kunnolla skaalautuvuus mielessä, sitä on koodin lisääntyessä helppo jatkokehittää ja ylläpitää.
+
+- MVC on alunperin (muistaakseni) 70-luvulla kehitetty suunnittelumalli, jota käytettiin aluksi työpöytäsovelluksissa. Sen kolmikerrosmallin (selain=View, palvelin=Controller, tietokanta=Model) vuoksi se sopii web-ohjelmoinnin suunnittelumalliksi. Uskallan väittää, ettei maailmassa ole yhtään tosissaan työkseen web-hommia tekevää koodaria, joka ei tiedä, mikä MVC on.
+
+- MVC eriyttää web-sovelluksen eri vastuualueet toisistaan, mikä helpottaa koodin uudelleenkäytettävyyttä. Kyseessä on ns. <strong><i>Separation of Concerns</i></strong>.
+    * tehdään tästä yhdessä esimerkki tunnilla.
+
+- Muistatko olio-ohjeloinnin kulmakiven <a href="/recap/#abstraction" target="_blank">abstraction</a>? Koska Model-luokat vastaavat tietokantakyselyistä, konkreettinen tietokantakyselyn toteutus kätketään model-luokan metodin alle. Koodarin ei siis tarvitse tietää, miten tai mistä tieto tulee, kun käyttää sovellusta. Toisin sanoen tietolähteen voi vaihtaa koskematta ollenkaan Controller-luokan routehandleriin, kunhan metodin nimi pysyy samana.
+
+- <strong>Koska tämä opintojakso koskee web-sovelluskehyksiä ja suunnittelumalleja, et pääse opintojaksoa läpi, jos et käytä MVC:tä tai vastaavia suunnittelumalleja koodissasi</strong>
+
+
+
+:::
+
+### Tehtävä 1
+
+Jatka tuntiharjoitusta ja tee loput <i>CRUD-toiminnallisuudet</i> käyttäjille ja tuotteille. Käytä MVC-suunnittelumallia ja restful routingin periaatteita.
+
+:::tip Mikä CRUD?
+
+CRUD tulee sanoista <strong>C</strong>reate<strong>R</strong>ead<strong>U</strong>pdate<strong>D</strong>elete Se on yleisesti web-ohjelmoinnissa käytetty termi ja sillä tarkoitetaan, että jollekin kokonaisuudelle tehdään luonti,- luku,- päivitys- ja poisto-ominaisuudet. <strong>Read eli listaus tarkoittaa tässä tapauksessa kahta eri routea ja controllerin funktiota. Ensimmäisellä listataan kaikki ja toisella haetaan id:n perusteella yksi rivi tietokannasta.</strong>
+
+:::
+
+
+### Tuntiharjoitus 2. 
+
+
+1. Jos sinulla ei vielä ole koodeja, hae ne täältä: <a href="https://github.com/juhaniguru/sovelluskehykset_bad1.git">Githubista mallikoodi</a> ja tietokanta
+
+2. Tee samat asennukset kuin tuntiharjoitus 1, jos sinulla ei ole vielä virtualenvia
+3. Varmista sen jälkeen, että sovellus lähtee päälle: <i>python app_harjoitus2.py</i>
+
+#### Tehtävänanto
+
+
+1. Refaktoroi app_harjoitus2.py:n koodi niin, että käytät MVC-mallia. Sinun pitää luoda Model-luokka vehicles-tietokantataulua varten ja käyttää sitä ajoneuvotietojen hakuun tietokannasta. Käytä samaa Model-luokan metodia molemmissa routehandlereissa (<i>get_all_vehicles_api</i> ja <i>get_all_vehicles_page</i>)
+
+:::tip plussaa
+
+Käymme yhdessä tuntiharjoituksen läpi tunnilla. Jos palautat ennen läpikäyntiä tehtävän Moodleen, ja se on oikein, <strong>voit saada siitä lisäpisteitä opintojaksoa arvioitaessa</strong>.
+
+<strong>Yhteisen läpikäynnin jälkeen palautettuja tehtäviä ei hyväksytä ja, koska kyseessä on tuntiharjoitus, ainoastaan tunnille osallistuneiden tehtävät arvioidaan.</strong>
+
+
+
+:::
+
+Tämän tuntiharjoituksen lopputuloksena sinulla pitäisi olla kaksi routehandleria, joista toinen palauttaa html-sivun ja toinen jsonia. Molemmat näistä routehandlereista hakevat datan käyttäen samaa Model-luokan metodia. Aiemmin mainittiin: 
+
+:::info
+
+<i>"MVC eriyttää web-sovelluksen eri vastuualueet toisistaan, mikä helpottaa koodin uudelleenkäytettävyyttä. Kyseessä on ns. Separation of Concerns.". </i>
+
+:::
+
+Nyt olemme käyttäneet samaa koodia kahdessa paikassa ja ainoasteaan metodikutsu on toistoa.
+
+
+### Q&A 2. 
+
+:::tip Onko MVC kaikki, mitä tarvitaan?
+
+<strong>Pienemmissä sovelluksissa MCV-malli voi riittää, mutta todellisuudessa koodi kannattaa tehdä modulaarisemmin.</strong> Jos sinun pitää esim. vaihtaa tietokanta MySQL:stä Postgrehen, model-luokkien kyselyt eivät toimi välttämättä sellaisinaan. 
+
+(Totta, vaikka molemmat ovat relaatiotietokantoja, joissa käytetään SQL-kyselykieltä, Postgres seuraa tiukemmin SQL-kielen standardia, eikä siinä siksi välttämättä toimi kaikki MySQL:n funktiot / ominaisuudet)
+
+Vaikka tietokantaskeema pysyisi samana, joudut kirjoittamaan model-luokat uudestaan Postgrelle, koska kysleyt tehdään MVC-mallissa suoraan modeliin. 
+
+:::
+
+## Repository pattern
+
+Repository-malli ja MVC-malli eivät sulje toisiaan pois, vaan niitä voi käyttää yhdessä. MVC:tä käytetään yleensä pohjalla ja sen päällä käytetään esim. repository-mallia.
+
+![architectures](./images/6.png)
+
+<small><i>Yksinkertaistettu kuva repository-mallista</i></small>
+
+:::info Huom
+
+Yo. kuva on yksinertaistettu esimerkki repository-mallin käytöstä. Oikeasti kaikki metodit eivät mene samaan repositorioon, vaan niitä on useampia. Kuvan on tarkoitus osoittaa, että tieto ei kulje enää suoraan controllerista modeliin ja takaisin. Nyt tieto kulkee controllerista repositorion kautta modeliin ja samaa reittiä takaisin.
+
+
+
+:::
+
+:::tip  Hyvä nyrkkisääntö
+
+Luo jokaista modelia kohti oma repositorio.
+
+<i>Tästä voi poiketa, jos sinulla on kaksi tosiinsa liittyvää modelia, joita käytät aina yhdessä, muttet koskaan tarvitse toista ilman toista. Tällöin voit käyttää kumpaakin modelia saman repositorion kautta.</i>
+
+:::
+
+![architectures](./images/7.png)
+
+Yo. kuvassa on tarkempi esimerkki MVC:n ja repository-mallien yhteiskäytöstä.
+Vasemmalla puolella oleva request tehdään osoitteeseen <i>/users/</i>. Siksi pyyntö reitittyy <i>UsersControlleriiin index-metodiin</i>, joka puolestaan kutsuu <i>UserRepositoryn all-metodia</i>. all-metodi käyttää <i>User-modelia</i>
+
+Oikealla puolella oleva pyyntö reitittyy <i>AuthControllerin login-metodiin</i>, koska route on <i>/auth/login</i>. Controllerista kutsutaan <i>UserRepositoryn login-metodia</i>, joka myös käyttää <i>User-modelia</i>. 
+
+<strong>Koska molemmat reqeustit tarvitsevat User-modelia, voidaan niiden toiminnallisuudet sijiottaa samaan repositorioon, mutta Controllerit vaihtuvat, koska urlit ovat erit.</strong>
+
+### Tuntiharjoitus 3. 
+
+:::tip Koodataan 
+
+Katsotaan esimerkki koodista MVC-mallista ilman repository-mallia ja tehdään sama sen jälkeen käyttäen repositoriota. Näin erot ja suunnittelumallin hyödyt huomaa helpoiten.
+
+:::
+
+1. Jos sinulla ei vielä ole koodeja, hae ne täältä: <a href="https://github.com/juhaniguru/sovelluskehykset_mvc2.git">Githubista mallikoodi</a> sekä tietokannat.
+    * mysql-tietokanta on sama kuin aiemmissa tuntiharjoituksissa.
+    * tarvitset tätä esimerkkiä varten Postgres-kannan 
+
+2. Tee samat asennukset kuin tuntiharjoitus 1 ja 2., jos sinulla ei ole vielä virtualenvia
+3. Varmista sen jälkeen, että sovellus lähtee päälle: <i>python app.py</i>
 
 
 
