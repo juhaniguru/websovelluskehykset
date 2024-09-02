@@ -276,6 +276,41 @@ Katsotaan esimerkki koodista MVC-mallista ilman repository-mallia ja tehdään s
 2. Tee samat asennukset kuin tuntiharjoitus 1 ja 2., jos sinulla ei ole vielä virtualenvia
 3. Varmista sen jälkeen, että sovellus lähtee päälle: <i>python app.py</i>
 
+![architectures](./images/8.png)
+
+Kuten kuvasta näkyy, User-luokka on molemmissa model-tiedostoissa sama, vaikka tietokantaskeema on molemmissa sama ja vain metodin toteutus on erilainen. 
+
+#### Tehtävänanto
+
+1. Luo uusi PyCharm / Flask-projekti
+    * tämä voidaan tehdä tunnilla yhdessä
+2. Refaktoroi mallin koodi käyttämään Repository-mallia.
+    * tee vastaava repository myös Postgrelle
+3. <strong>Tietokannassa on myös products-taulu. Tee sille vastaavanlainen koodi kuin käyttäjien listaukselle MVC-mallin mukaisesti</strong>
+
+![architectures](./images/9.png)
+
+:::tip Muista periytyminen (inheritance)
+
+Peritytyminen on yksi olio-ohjelmointikielten kulmakivistä. Tässäkin tehtävässä repositorioiden get_all-metodit ovat samanlaiset. <strong>Saat plussaa, jos saat poistettua toistuvan koodin repositorioista käyttäen apuna periytymistä</strong> 
+
+:::
+
+### Tehtävä 2
+
+Jatka tuntiharjoitusta ja tee loput <i>CRUD-toiminnallisuudet</i> käyttäjille ja tuotteille. Käytä MVC-suunnittelumallia, repository-mallin kanssa yhdessä ja restful routingin periaatteita. Tee CRUD sekä  MySQL:lle että Postgrelle.
+
+:::tip Mikä CRUD?
+
+CRUD tulee sanoista <strong>C</strong>reate<strong>R</strong>ead<strong>U</strong>pdate<strong>D</strong>elete Se on yleisesti web-ohjelmoinnissa käytetty termi ja sillä tarkoitetaan, että jollekin kokonaisuudelle tehdään luonti,- luku,- päivitys- ja poisto-ominaisuudet. <strong>Read eli listaus tarkoittaa tässä tapauksessa kahta eri routea ja controllerin funktiota. Ensimmäisellä listataan kaikki ja toisella haetaan id:n perusteella yksi rivi tietokannasta.</strong>
+
+:::
+
+### Tehtävä 3.
+
+Tämä on hieman haastavampi tehtävä. Jatka tehtävää 2. ja tee lisäksi repositorio ja CRUD-toiminnallisuudet MongoDB:lle. 
+
+
 
 
 
