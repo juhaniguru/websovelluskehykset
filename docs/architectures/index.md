@@ -277,6 +277,7 @@ Katsotaan esimerkki koodista MVC-mallista ilman repository-mallia ja tehdään s
 3. Varmista sen jälkeen, että sovellus lähtee päälle: <i>python app.py</i>
 
 ![architectures](./images/8.png)
+<small><i>Kuva lähtötilanteesta</i></small>
 
 Kuten kuvasta näkyy, User-luokka on molemmissa model-tiedostoissa sama, vaikka tietokantaskeema on molemmissa sama ja vain metodin toteutus on erilainen. 
 
@@ -308,7 +309,109 @@ CRUD tulee sanoista <strong>C</strong>reate<strong>R</strong>ead<strong>U</stron
 
 ### Tehtävä 3.
 
+Tee sovellukseen lisäominaisuus, joka hakee käyttäjätiedot <a href="https://jsonplaceholder.typicode.com/users" target="_blank">täältä</a>. Tarkoitus on, että teet uuden repositorion uutta datalähdettä varten, jotta muutokset oo. koodiin pysyvät mahdollisimman vähäisinä
+
+:::info Huom. APIsta löytyvä data ei ole täysin samanlaista
+
+- Pidä model-luokka koodissa ennallaan (osoitetiedot yms. voit jättää käyttämättä).
+- Apista löytyvä name-kenttä sisältää sekä suku-, että etunimen, muista laittaa nimet oikeisiin muuttujiin model-luokassa.
+
+:::
+
+![architectures](./images/10.png)
+
+<small><i>Lähde: https://jsonplaceholder.typicode.com/users</i></small>
+
+### Tehtävä 4.
+
 Tämä on hieman haastavampi tehtävä. Jatka tehtävää 2. ja tee lisäksi repositorio ja CRUD-toiminnallisuudet MongoDB:lle. 
+
+:::info Koska tämä ei ole tietokantakurssi
+
+emme käytä aikaa yhdessä tunnilla siihen, jos ei ole tarvetta <strong>Jos sinulle ei ole aiempaa kokemusta MongoDB:stä, kerro siitä. Voin tehdä videon / jakaa aiemmilta opintojaksoilta materiaalia.</strong>
+
+:::
+
+## Factory Pattern & Dependency Injection
+
+Factory Patternia ja Dependency Injectionia näkee käytettävän monesti yhdessä, vaikka ne toimivat toki yksinäänkin
+
+###  Factory Pattern
+
+Kuvittele, että sinulla on tehtaassa liukuhihna, jolla voidaan valmistaa useita erilaisia kenkiä. Pystyt valmistamaan kaikkia näitä eri kenkiä tietämättä itse, miten ne valmistetaan, kunhan vain osaat paremetroida / konfiguorida liukuhihan oikein.
+
+```py
+
+
+class Shoe:
+    def __init__(self, brand, style, size):
+        self.brand = brand
+        self.style = style
+        self.size = size
+
+    
+
+class ShoeFactory:
+    def create_shoe(self, shoe_type, _size):
+        if shoe_type == "lenkkarit":
+            return Shoe("Asics ", "Gel Nimbus", _size)
+        elif shoe_type == "saapas":
+            return Shoe("Nokia", "Kumisaapas", _size)
+        elif shoe_type == "sandaali":
+            return Shoe("Pomar", "Hiekka", _size)
+        
+
+# Usage
+factory = ShoeFactory()
+boot = factory.create_shoe("saapas", 43)
+sneaker = factory.create_shoe("lenkkarit", 43)
+sandal = factory.create_shoe("sandaali", 43)
+
+
+
+
+```
+
+Yllä on yksinkertaistettu esimerkki ShoeFactory:sta, jossa voi luoda sandaaleita, lenkkareita ja saappaita. ShoeFactory-luokan voi korvata myös yksinkertaisemmalla funktiolla, esim. <i>create_shoe</i>.
+
+Palataan takaisin aiempaan Repository Pattern-mallin esimerkkiin ja käytetään siinä RepositoryFactorya, jolla luodaan varsinainen instanssi repositorysta.
+
+
+![architectures](./images/11.png)
+
+Yo. esimerkissä käytämme repository_factory-funktiota luomaan UserRepository-luokasta instanssin. 
+
+#### Q&A 3.
+
+:::tip Miksi factory patternia pitäisi käyttää, kun ilmankin pärjää?
+
+- Kaikissa eri suunnittelumallien käyttöesimerkeissä on kyse pohjimmiltaan parista asiasta
+
+- Separation of Concerns
+- Koodin keskitetty hallinta
+    * nyt, kun UserRepositoryn instansseja ei luoda missä sattuu, vaan keskitetysti reposityro_factory:n avulla, muutokset UserRepositoryyn tarvitsee tehdä vain yhteen paikkaan
+
+    * myös silloin, jos pitää tehdä uusi repositorio uutta datalähdettä varten, lisäys tarvitsee tehdä vain yhteen paikkaan. 
+
+- Koodin testattavuus paranee sitä enemmän, mitä modulaarisemmin se on rakennettu
+    * yksikkötestejä ajettaessa repository voidaan helposti korvata stubilla / fakella.
+
+:::
+
+:::tip Eikö ole hullua, että repository_factorya kutsutaan jokaisessa controllerin routehandlerissa erikseen?
+
+Kyllä, tämä ei ole järkevää. Sen sijaan factory patternia kannattaa käyttää yhdessä dependency injectionin kanssa
+
+:::
+
+### Dependency Injection
+
+
+
+
+
+
+
 
 
 
