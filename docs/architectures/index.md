@@ -404,9 +404,9 @@ Kyllä, tämä ei ole järkevää. Sen sijaan factory patternia kannattaa käytt
 
 :::
 
-### Dependency Injection
+### Dependency Injection (DI)
 
-
+Yksinkertaisesti dependency injection on tekniikka, jonka avulla ohjelman komponentti (esim. Controllerin routehandler-metodi/funktio) saa riippuvuutensa (esim. UserRepository) ulkopuolelta sen sijaan, että loisi sen itse.
 
 
 
