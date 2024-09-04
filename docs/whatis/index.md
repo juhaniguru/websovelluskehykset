@@ -130,6 +130,8 @@ def require_role(role_name):
                     # näytämme käyttäjälle virheilmoituksen
                     # http-statuskoodilla 403 (forbidden)
                 return jsonify({f'err': 'you have to be a member of {role_name} group to access this page'}), 403
+        return wrapper
+    return decorator
             
 
 
