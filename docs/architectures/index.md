@@ -416,14 +416,32 @@ Yo. kuvassa on oranssilla ympyröitynä repository_factory-funktion kutsu. Täss
 
 :::tip Mikä vika tässä on?
 
-Periaatteessa ei mitään vikaa, koska koodihan toimii, mutta jos meillä olisi useampi routehandler, joissa tarvitaan samaa UserRepositorya (kuten oikeissa sovelluksissa on) ja repository_factoryn kutsua pitäisi jotenkin muuttaa. Jos repository_factorysta pitäisi esimerkiksi vaihtaa tietokannan tyyppi Mysqlista Postgrehen, tällä tavalla joutuisimme muuttamaan kutsua jokaiseen routehandleriin. 
+Periaatteessa ei mitään vikaa, koska koodihan toimii, mutta jos meillä olisi useampi routehandler, joissa tarvitaan samaa UserRepositorya (kuten oikeissa sovelluksissa on) ja repository_factoryn kutsua pitäisi jotenkin muuttaa, tällä tavalla joutuisimme muuttamaan kutsua jokaiseen routehandleriin (jos joutuisimme vaihtamaan datalähdettä mysqlista postgrehen).
 
 <strong>Sen sijaan, jos luomme UserRepositorysta instanssin routehandlereiden ulkopuolella ja välitämme instanssin niille parametrina, joudumme tekemään muutoksen vain yhteen paikkaan. Tämä on dependency injection</strong>
 
+:::
 
+Dependency Injectionin voi tehdä useammalla eri tavalla, käydään ne läpi
 
+#### Decorator injection
+
+:::info huom decorator injection
+
+Decoratorit ovat Pythonin ominaisuus, joka löytyy vastaavana myös muista ohjelmointikielistä JavaScriptissä / TypeScriptissä ne ovat myös decoraattoreita, Javassa näistä puhutaan annotaatioina ja C#:ssa attribuutteina. C#:ssa attribuutteja ei kuitenkaan kannata käyttää ensisijaisesti depenndency injectioniin. C#:ssa tähän on olemassa muita sopivampia dependency injectionin muotoja, joita käydään myöhemmin läpi.
+
+Jos et tiedä, mikä decorator on, lue ensin <a href="/whatis/#python-decorator">tämä</a>
 
 :::
+
+Nyt, kun tiedät, mikä dekoraattori on, katsotaan, miten voimme käyttää sitä modularisoimaan vielä pidemmälle aiemmin tehtyä koodia.
+
+
+
+
+
+
+
 
 
 
