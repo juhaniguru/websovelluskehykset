@@ -406,7 +406,24 @@ Kyllä, tämä ei ole järkevää. Sen sijaan factory patternia kannattaa käytt
 
 ### Dependency Injection (DI)
 
-Yksinkertaisesti dependency injection on tekniikka, jonka avulla ohjelman komponentti (esim. Controllerin routehandler-metodi/funktio) saa riippuvuutensa (esim. UserRepository) ulkopuolelta sen sijaan, että loisi sen itse.
+Yksinkertaisesti dependency injection on tekniikka, jonka avulla ohjelman komponentti (esim. Controllerin routehandler-metodi/funktio) <i>saa riippuvuutensa (esim. UserRepository) ulkopuolelta sen sijaan, että loisi sen itse.</i>
+
+Katsotaan uudelleen osaa edellisestä kuvasta, niin huomataan, mitä tämä käytännössä tarkoittaa
+
+![architectures](./images/12.png)
+
+Yo. kuvassa on oranssilla ympyröitynä repository_factory-funktion kutsu. Tässä siis get_all_users-routehandler luo itse UserRepository-luokan instanssin käyttäen repository_factorya. 
+
+:::tip Mikä vika tässä on?
+
+Periaatteessa ei mitään vikaa, koska koodihan toimii, mutta jos meillä olisi useampi routehandler, joissa tarvitaan samaa UserRepositorya (kuten oikeissa sovelluksissa on) ja repository_factoryn kutsua pitäisi jotenkin muuttaa. Jos repository_factorysta pitäisi esimerkiksi vaihtaa tietokannan tyyppi Mysqlista Postgrehen, tällä tavalla joutuisimme muuttamaan kutsua jokaiseen routehandleriin. 
+
+<strong>Sen sijaan, jos luomme UserRepositorysta instanssin routehandlereiden ulkopuolella ja välitämme instanssin niille parametrina, joudumme tekemään muutoksen vain yhteen paikkaan. Tämä on dependency injection</strong>
+
+
+
+
+:::
 
 
 
