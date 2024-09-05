@@ -527,27 +527,152 @@ Ei välttämättä mihinkään. Uusia abstraktiolayereita ei kannata lisätä va
 
 ```py
 
-class AuthService:
-    def __init__(self, _db, _log_service):
+# AuthRepository
+class AuthRepository:
+    def __init__(self, _db, _log_repository):
         self.con = _db
-        self.log =_log_service
+        self.log = _log_repository
 
     def login(self, username, password):
         with self.con.cursor() as cur:
             cur.execute('SELECT * FROM user WHERE username = %s', (username,))
             user = cur.fetchone()
-            if user is not None:
-                if user['password'] == password:
-                    now = # nykyhetki
+            if user is  None:
+                raise Exception('user not found')
+            if user['password'] == password:
+                now = # nykyhetki
 
-                    # lisätään lokimerkintä käyttäjän kirjautumisesta.
+                # lisätään lokimerkintä käyttäjän kirjautumisesta.
 
-                    # TÄMÄ RIVI ON VÄÄRÄSSÄ PAIKASSA
-                    # LogRepositorya ei pidä käyttää täällä
-                    self.log.add(f'{username} logged in at {now}')
+                # TÄMÄ RIVI ON VÄÄRÄSSÄ PAIKASSA
+                # LogRepositorya EI PIDÄ KÄYTTÄÄ TÄÄLLÄ
+                self.log.add(username, now)
+            
+
+
             
 
 ```
+
+```py
+
+class LogRepository:
+    def __init__(self, _db):
+        self.con = _db
+    
+    def add(self, username, _timestamp):
+        with self.con.cursor() as cur:
+            cur.execute('INSERT INTO log_table(username, ts) VALUES(%s, %s)', (username, _timestamp))
+            cur.execute()
+
+```
+
+![architectures](./images/18.png)
+
+Yo. kuvassa on Controller-luokka / tiedosto, jota ei koodiesimerkissä ole. Se on jätetty esimerkistä pois selkeyden vuoksi. Joka tapauksessa repositoriot toimivat kuvan tavalla.
+
+:::tip Huomaatko, mikä ongelma tässä on?
+
+Kun request valuu alaspäin controllerilta AuthRepositorylle, homma menee vielä oikein, mutta samalla tasolla olevien komponenttien (tässä tapauksessa repositoryt Auth ja Log) ei pitäisi keskustella keskenään. <strong>Datan pitäisi valua aina arkkitehtuurissa alas ja vastauksen nousta takaisin ylös. Ei niin, että ensin alas ja sitten sivuttain</strong>
+
+:::
+
+Tähän on kaksi hyvää korjausta
+
+#### 1. Kutsutaan AuthControllerista kahta eri repositorya ja niiden metodeja
+
+```py
+
+# esimerkistä on jätetty pois
+# dekoraattoreiden luonti,
+# koska se on toissijaista esimerkin kannalta
+
+@get_db_conn()
+@inject_auth_repo
+@inject_log_repo
+@app.route('/api/login')
+def login(auth_repo, log_repo):
+    auth_repo.login('juhani', 'salasana')
+    log_repo.add('juhani', now)
+
+```
+
+![architectures](./images/19.png)
+
+Tämä ratkaisu toimii ihan hvyin pienissä sovelluksissa, mutta useamman repositorion injectoiminen  yhteen routehandleriin voi mennä työlääksi
+
+Parempi vaihtoehto on käyttää Repository Patternin kanssa yhdessä Service Patternia
+
+```py
+
+# service
+class AuthService:
+    def __init__(self, _db):
+    
+        self.auth_repo = AuthRepository(_db)
+        self.log_repo = LogRepository(_db)
+    
+
+    def login(self, username, password):
+        self.auth_repo.login(username, password)
+        self.log_repo.add(username, now)
+
+
+
+# controller
+@app.route('/api/login')
+@inject_auth_service
+def login(auth_service):
+    auth_service.login('juhani', 'salasana')
+
+```
+
+![architectures](./images/20.png)
+
+:::tip Miksi tämä ratkaisu on parempi kuin kaksi eri repositorya controllerissa?
+
+- controllerin routehandlerit on hyvä pitää mahdollisimman siisteinä
+    * tämä perustuu MVC:n perusperiaatteeseen <i>"Slim controller, fat model</i>
+    * Slim controller, fat model tarkoittaa käytännössä sitä, että controlleriin pitäisi tulla MVC-mallissa mahdollisimman vähän tavaraa.
+- kun käytämme service patternia yhdessä repository patternin kanssa, pystymme abstraktoimaan (kätkemään) useita repositoryja saman servicen alle koskematta controllerin koodiin ollenkaan -> modulaarisempi koodi = parempi koodi
+
+:::
+
+Mikään suunnittelumalli ei rajaa kerroksien määrää, että kerroksia pitäisi olla korkeintaan tai vähintään jokin tietty määrä. 
+
+:::tip Vinkki
+
+Itse teen lähtökohtaisesti nykyään projektin rakenteen tällä kaavalla view->controller->service->repository->model. 
+
+Jokaista Controlleria varten oma service ja jokaista modelia varten oma repository sekä tietenkin jokaista tietokannan taulua varten puolestaan oma model-luokka.
+
+Se, mitä dependency injectionin muotoa käytän riippuvuuksien välittämiseen komponentilta ja layerilta toiselle riippuu käytetystä kielestä.
+
+Pythonin tapauksessa controllerissa käytän monesti decorator injectionia ja ja controllerista alaspäin välitän riippuvuudet constructor injectionilla tai interface injektionilla*
+
+Factory patternia käytän monesti riippuvuuksien luontiin, sillä se keskittää riippuvuuuksien luonnin yhteen paikkaan, jolloin mahdolliset koodiin tehtävät muutokset voidaan tehdä yhteen paikkaan.
+
+
+
+:::
+
+
+:::tip *) Mikä ihmeen interface injection
+
+<strong>interface injection tarkoittaa vain sitä, että constructor injectionissa riippuvuuden tietotyyppinä käytetään luokan tietotyypin sijasta interfacea, mikä puolestaan luo modulaarisempaa koodia. Kyse on siis constructor injectionin variaatiosta</strong>
+
+Totta emme ole aiemmin käyneet läpi interface injectionia, eikä sitä ole edes mainittu.
+Koska Pythonissa ei ole monesta muusta kielestä tuttua interfacea, tämä on jätetty tarkoituksella pois. Käydään tämä dependency injectionin tyyppi läpi C#:lla. Esimerkin löydät <a href="#">täältä</a>
+
+:::
+
+:::tip Eikö Pythonissa voi käyttää interface injectionia?
+
+Ei varsinaisesti juuri siksi, koska interfacea ei Pythonissa ole. Pythonin tapauksessa interfacen voi korvata abstractilla luokalla...Mutta koska Python on dynaamisesti tyypitetty kieli, se ei ole monestikaan tarpeen. Interface Injection on todella hyödyllinen tapa staattisesti tyypitetyissä kielissä (C#, Go...yms.). Voit katsoa vastaavan esimerkin Pythonille <a href="#">täältä</a>
+
+:::
+
+
 
 
 
