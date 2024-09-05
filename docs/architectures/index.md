@@ -381,7 +381,7 @@ Palataan takaisin aiempaan Repository Pattern-mallin esimerkkiin ja käytetään
 
 Yo. esimerkissä käytämme repository_factory-funktiota luomaan UserRepository-luokasta instanssin. 
 
-#### Q&A 3.
+### Q&A 3.
 
 :::tip Miksi factory patternia pitäisi käyttää, kun ilmankin pärjää?
 
@@ -424,7 +424,7 @@ Periaatteessa ei mitään vikaa, koska koodihan toimii, mutta jos meillä olisi 
 
 Dependency Injectionin voi tehdä useammalla eri tavalla, käydään ne läpi
 
-#### Decorator injection
+### Decorator injection
 
 :::info huom decorator injection
 
@@ -436,15 +436,118 @@ Jos et tiedä, mikä decorator on, lue ensin <a href="/whatis/#python-decorator"
 
 Nyt, kun tiedät, mikä dekoraattori on, katsotaan, miten voimme käyttää sitä modularisoimaan vielä pidemmälle aiemmin tehtyä koodia.
 
+![architectures](./images/14.png)
+
+### Tuntiharjoitus 4.
+
+Jatka tuntiharjoitus 3:sta niin, ettet luo UserRepositorya enää routehandlerissa vaan sen sijaan käytät decorator injectionia saadaksesi UserRepositoryn instassin routehandleriin. 
+
+#### Tehtävänanto
+
+Tehtäväsi on myös luoda dekoraattori itse, jossa käytät repository_factory-funktiota dekoraattori on tarkoituksella jätetty esimerkistä pois.
+
+### Constructor injection
+
+Constructor injection on toinen ja varmasti yleisin dependency injectionin muoto, sillä se toimii luokkien constructoreiden avulla (Pythonissa luokan __init__-metodi) ja näin ollen kaikissa olio-ohjelmointikielissä*. <strong>Kyse on siitä, että luokan konstruktorille annetaan riippuvuudet parametreinä.</strong>
+
+:::info *)
+
+Toimitus huomauttaa, ettei ole koodannut kaikilla maailman ohjelmointikielillä, mutta ainakin näissä: Python, PHP, C#, Java, Kotlin, Dart, JavaScript / TypeScript* ym.
+
+:::
+
+Katsotaan uudelleen tuntiharjoitus 3. UserRepository-esiemerkkiä.
 
 
 
+![architectures](./images/15.png)
 
+Yo. kuvassa tietokantayhteys on avattu UserRepositoryMysql-luokan konstruktorissa. Koodista saa modulaarisemman käyttämällä constructor injectionia.
 
+![architectures](./images/16.png)
 
+1. Vasemmalla ylhäällä controllerin routehandlerin yläpuolella on 2 dekoraattoria
+    * get_db_conn, jolla avataan tietokantayhteys ja
+    * inject_user_repo, jolla injectoidaan repositorio routehandleriin käyttäen decorator injectionia.
 
+2. Oikealla controllerin vieressä on models.py:n get_db_conn-dekoraattorin koodi
+    * tässä dekoraattorissa avataan db_type-muuttujan mukainen tietokantayhteys, joka on joko MySQL tai Postgres
+    * Kun tietokantayhteys on avattu, palautetaan route_handler, joka saa parametrikseen juuri avatun tietoantayhteyden _db
 
+3. Koska controllerissa get_db_conn-dekoraattorin alapuolella on käytetty inject_user_repo-dekoraattoria, 2. kohdan return route_handler_func(_db, *args, **kwargs) menee seuraavaksi inject_user_repo-dekoraattoriin.
 
+4. inject_user_repo-dekoraatorissa käytetään repository_factory-funktiota, jossa luodaan varsinainen repositorion instanssi. <i>Nyt repository_factory ottaa 3. parametrin, joka on get_db_conn-dekoraattorista saatu avattu tietokantayhteys</i>
+
+5. repository_factory-funktiossa on varsinainen <strong>constructor injection</strong>, kun annamme instanssia luodessamme repositoriolle tietokantayhteyden kontstruktorin parametrinä.
+
+### Q&A 4.
+
+:::tip Tuntuuko tämä constructor injection yliampuvalta?
+
+Myönnetäköön, että esimerkin koodimäärä on niin pieni, ettei tässä nimenomaisessa tapauksessa constructor injectionista ole merkittävää hyötyä. Se, että tietokantayhteys instantioidaan repositorion constructorissa ilman dependency injectiota toimii tässä tapauksessa riittävän hyvin.
+
+Yksi merkittävä hyöty construction injectionin käytöstä (ja tietokantayhtyden luonnista repositoryn ulkopuolella) on se, että nyt voisimme käyttää yhtä repositoriota sekä Mysqlille, että Postgrelle, koska ainoa ero koodeissa on yhdistämiseen liittyvä.
+
+:::
+
+### Setter injection
+
+Setter injection on constructor injectionin variaatio, jossa constructorin sijasta tai sen lisäksi repositorioon tehdään set_db-metodi, jonka avulla tietokantayhteyden voi vaihtaa "lennosta" tekemättä uutta instanssia repositoriosta.
+
+```py
+
+class UserRepository:
+    def __init__(self):
+        self.con = None
+    
+    def set_db(self, _db):
+        self.con = _db
+
+```
+
+## Service Pattern
+
+Service-malli, Repository-malli ja MVC-malli eivät sulje toisiaan pois, vaan niitä voi käyttää yhdessä. MVC:tä käytetään yleensä pohjalla ja sen päällä käytetään esim. service- ja repository-malleja
+
+Service-mallia ei myöskään ole pakko käyttää repositoryn kanssa.
+
+![architectures](./images/17.png)
+
+Service-mallissa service-layer kuuluu controllerin ja jo meille tutun repositorio-layerin väliin.
+
+### Q&A 5.
+
+:::tip Mihin service layeria tarvitsee?
+
+Ei välttämättä mihinkään. Uusia abstraktiolayereita ei kannata lisätä vain abstraktion ja patternien vuoksi, mutta service layerilla on paikkansa. Katsotaan esimerkki siitä, milloin service layeria kannattaa käyttää
+
+:::
+
+<i>Kuvitellaan sellainen käyttötapaus, jossa käyttäjän sisäänkirjautumisen jälkeen pitää tehdä jokaisesta kirjautumisesta lokimerkintä tietokantaan.</i> Koodi tällaisessa käyttötapauksessa voisi näyttää ilman sevice patternia tältä:
+
+```py
+
+class AuthService:
+    def __init__(self, _db, _log_service):
+        self.con = _db
+        self.log =_log_service
+
+    def login(self, username, password):
+        with self.con.cursor() as cur:
+            cur.execute('SELECT * FROM user WHERE username = %s', (username,))
+            user = cur.fetchone()
+            if user is not None:
+                if user['password'] == password:
+                    now = # nykyhetki
+
+                    # lisätään lokimerkintä käyttäjän kirjautumisesta.
+
+                    # TÄMÄ RIVI ON VÄÄRÄSSÄ PAIKASSA
+                    # LogRepositorya ei pidä käyttää täällä
+                    self.log.add(f'{username} logged in at {now}')
+            
+
+```
 
 
 
