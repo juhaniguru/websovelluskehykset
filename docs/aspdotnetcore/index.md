@@ -774,6 +774,14 @@ ActionResult on geneerinen luokka, jolle voi antaa paluuarvon. Tehdään koodi v
 
 ![dotnet](./images/23.png)
 
+### Service Pattern Asp .net Coressa
+
+:::tip Ennen kuin
+
+katsomme, miten Service Pattern toimii Asp .Net Coressa, katsotaan ensin, <a href="/whatis/#interface">mikä on rajapinta</a> ja miten sitä voidaan käyttää koodin modularisoinnissa.
+
+:::
+
 
 
 

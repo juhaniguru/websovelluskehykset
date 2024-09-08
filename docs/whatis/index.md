@@ -177,3 +177,22 @@ esimerkkikoodin kommenteissa, con-muuttuja on käytössä require_role-dekoraatt
 :::
 
 Nyt, kun tiedät mikä dekoraattori on ja miten sen toimii, voit palata takaisin <a href="/architectures/#dependency-injection-di">arkkitehtuureihin</a>
+
+## Olio-ohjelmoinnin rajapinta
+
+:::tip Ei puhuta web-ohjelmointirajapinnasta
+
+Rajapintoja on ohjelmoinnin ja tekniikan maailmassa. Nyt ei puhuta web-ohjelmointirajapinnoista tai käyttöliittymistä vaan  interfacesta
+
+:::
+
+Interface on monessa ohjelmointikielessä oleva käsite, joka mahdollistaa skaalautuvamman tietotyyppien käytön
+
+<strong>Rajapinta on ns. sopimus siitä, mitä metodeja rajapintaa käyttävän luokan pitää sisältää</strong>. 
+
+:::tip Tä?
+
+Jos luokka käyttää jotakin rajapintaa, luokkaan on pakko kirjoittaa konkreettinen toteutus kaikille rajapinnan metodeille, tai koodi ei käänny. Katsotaan käytännössä C#:lla, mitä tämä tarkoittaa.
+
+:::
+
