@@ -1,5 +1,11 @@
 # KERTAUS
 
+:::tip Miten tämä sivu vastaa opintojakson tavoitteita?
+
+Ei suoraan mitenkään, mutta käyttämämme arkkitehtuurit ja suunnittelumenetelmät pohjautuvat hyvin pitkälle olio-ohjelmoinnin peruspilareiden päälle. Niiden osaaminen on <strong>todella tärkeää</strong>, jos arvioidaan koodin uudellenkäytettävyyttä ja siisteyttä
+
+:::
+
 Kerrataan olio-ohjelmoinnin perusperiaatteita
 
 :::info Miksi olio-ohjelmoinnin perusperiaatteita?
@@ -243,3 +249,9 @@ read- ja write-metodit siis ovat abstraktioita joita pystyy käyttämään täys
 Yo. esimerkissä käytetään myös jo tutuksi tulleita periytymistä ja polymorfismia. Itseasiassa juuri periytyminen ja polymorfismi mahdollistavat read- ja write-metodien konkreettisen toteutuksen abstraktoinnin. 
 
 :::
+
+
+### Tehtävä 5.
+
+Tee web-sovellus (rest api), jossa teet CRUD-toiminnallisuudet käyttäjille, tuotteille ja ajoneuvoille. Käytä aiempien tehtävien tietokantaa. Suunnittele sovelluksen arkkitehtuuri niin, että se on modulaarinen ja sovelluksesta voidaan vaihtaa esim. datalähde toiseen ilman isoja muutoksia koodiin. 
+

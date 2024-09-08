@@ -1,5 +1,11 @@
 # YLEISIMMÄT SOVELLUSKEHYSTEN PERIAATTEET JA ARKKITEHTUURIT
 
+:::tip Miten tämä sivu vastaa opintojakson tavoitteita?
+
+<i>"Opiskelija ymmärtää suunnitteluperiaatteet ja arkkitehtuurit, joita yleisimmät sovelluskehykset noudattavat."</i>
+
+:::
+
 <h2><i>"Jos softa olisi talo, rakenna se niin, ettei talosta tarvitse hajoittaa koko seinää, jos ikkuna tai ovi pitää vaihtaa."</i></h2>
 
 :::tip tä?
