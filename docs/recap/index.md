@@ -166,7 +166,7 @@ Jos emme käyttäisi enkapsulointia, joutuisimme välittämään drive-metodille
 
 ## ABSTRACTION
 
-Abstraktointi olio-ohjelmoinnissa tarkoittaa käytännössä sitä, että esim. metodia voi kutusa tietämättä, miten se on konkreettisesti toteutettu
+Abstraktointi olio-ohjelmoinnissa tarkoittaa käytännössä sitä, että esim. metodia voi kutsua tietämättä, miten se on konkreettisesti toteutettu
 
 :::tip tä?
 
