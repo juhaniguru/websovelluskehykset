@@ -782,6 +782,121 @@ katsomme, miten Service Pattern toimii Asp .Net Coressa, katsotaan ensin, <a hre
 
 :::
 
+Nyt kun olemme ottaneet selvää, mikä on interface ja miten interface injectionia voidaan käyttää, katsotaan, miten voimme käyttää niitä Asp .Net Coressa ja Service Patternin käyttöönotossa
+
+
+1. Lisää API-kansion alle Solutions Explorerissa uusi kansio <i>Services</i>
+2. Lisää Services-kansion alle uusi kansio <i>Interfaces</i>
+3. Lisää Interfaces-kansioon uusi interface <i>IUserService</i>
+
+```cs
+
+using System;
+using API.Models;
+
+namespace API.Services.Interfaces;
+
+public interface IUserService
+{
+    Task<List<AppUser>> GetAll();
+}
+
+```
+
+4. Lisää Services-kansioon uusi luokka <i>UserService</i>
+
+```cs
+
+using System;
+using API.Data;
+using API.Models;
+using API.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+
+namespace API.Services;
+
+// Nyt DataContext on injektoitu UserServicen dependencyksi
+// Huomaa. UserService käyttää nyt IUserService-rajapintaa
+public class UserService(DataContext context) : IUserService
+{
+    // nyt se tietokantakysely, joka oli aiemmin Controllerissa,
+    // löytyy täältä
+    public async Task<List<AppUser>> GetAll()
+    {
+        var users = await context.Users.ToListAsync();
+        return users;
+    }
+}
+
+
+
+
+```
+
+5. Muokataan UsersControllerin koodia niin, että se käyttää UserServicea
+
+```cs
+// nyt controller käyttää servicea
+// nimenomaan interface injectionilla
+public class UsersController(IUserService service) : ControllerCustomBase
+    {
+
+
+        [HttpGet]
+        public async Task<ActionResult<List<AppUser>>> GetAllUsers()
+        {
+            // nyt sen sijaan, että tekisimme suoraan kyselyn contextiin,
+            // käytämme sericen GetAll-metodia.
+            var users = await service.GetAll();
+            return Ok(users);
+
+        }
+
+
+    }
+
+```
+
+Jos nyt suoritat koodin, se kääntyy kyllä, mutta siitä tulee ajonaikainen virhe!
+
+:::tip Miksi softa kuolee ajossa?
+
+Teknisesti kaikki on kääntäjän mielestä kunnossa, mutta ongelma on siinä, että ASP .Net Core ei tiedä, mitä meidän  <i>IUserService</i> tekee. 
+
+<strong>Muista että interface ei sisällä konkreettista toteutusta, vaan ainostaan kuvauksen metodista. Tästä syystä, kun käytämme Interfacea tyyppinä, Asp. Net Core ei tiedä, mitä konkreettisesti pitäisi tehdä</strong>
+:::
+
+6. Rekisteröidään UserService käyttöön
+    * Mene Program.cs-tiedostoon
+    * Lisää uusi service
+
+```cs
+
+// yläpuolella on on builder.Services.AddContext ....
+
+// Tämä rivi kertoo, että aina, kun Controlleriin injectoidaan muuttuja tyypillä
+// IUserService, pitää Asp .Net Coren tehdä konkreettinen instanssi luokasta UserService
+
+builder.Services.AddScoped<IUserService, UserService>();
+
+// alapuolella on builde.Services.AddControllers();
+
+
+```
+
+:::tip Mikä ihmeen AddScoped?
+
+- Pystyt lisäämään oman servicen kolmella eri tavalla
+    * AddScoped: tämä tarkoittaa, että servicesta tehty instanssi (tässä tapauksessa UserService) elää HTTP-pyynnön ajan. Kun sitä ei enää tarvita, se siivotaan pois. Taas seuraavan requestin aikana luodaan uusi instanssi.
+    * AddTransient: Aina, kun servicen metodia kutsutaan luodaan uusi instanssi sevicestä. Jos olisimme esim. tehneet kaksi eri metodikutsua serviceen samassa routehandlerissa, molemmille Asp .Net Core olisi luonut oman instanssin
+    * AddSingleton: Singleton tarkoittaa, että instansseja luodaan vain yksi koko ohjelman elinkaaren aikana ja kaikki käyttävät tätä samaa instanssia. <strong>Tämä toimii yleensä hyvin conffitiedostojen tapauksessa, muttei muuten</strong>
+
+    <strong>Kun implementoit Service Patternia omaan koodiisi, kannattaa oletuksena käyttää AddScoped-metodia niiden lisäykseen</strong>
+
+    
+
+:::
+
 
 
 

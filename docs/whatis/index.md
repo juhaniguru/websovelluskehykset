@@ -178,7 +178,7 @@ esimerkkikoodin kommenteissa, con-muuttuja on käytössä require_role-dekoraatt
 
 Nyt, kun tiedät mikä dekoraattori on ja miten sen toimii, voit palata takaisin <a href="/architectures/#dependency-injection-di">arkkitehtuureihin</a>
 
-## Olio-ohjelmoinnin rajapinta
+## Interface
 
 :::tip Ei puhuta web-ohjelmointirajapinnasta
 
@@ -195,4 +195,179 @@ Interface on monessa ohjelmointikielessä oleva käsite, joka mahdollistaa skaal
 Jos luokka käyttää jotakin rajapintaa, luokkaan on pakko kirjoittaa konkreettinen toteutus kaikille rajapinnan metodeille, tai koodi ei käänny. Katsotaan käytännössä C#:lla, mitä tämä tarkoittaa.
 
 :::
+
+```cs
+
+namespace IExampleProgram;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        var truck = new Truck();
+        var trucker = new Trucker();
+
+        var cyclist = new Cyclist();
+        var bike = new Bike();
+
+        cyclist.OperateVehicle(bike);
+
+        trucker.OperateVehicle(truck);
+        // tämä ei onnistu, koska pyöräilijä ei voi ajaa rekkaa
+        // koodia ei pysty suorittamaan, koska se ei mene kääntäjästä läpi
+        // näin pitää ollakin
+        // cyclist.OperateVehicle(truck);
+    }
+}
+
+public class Truck
+{
+
+    public void Drive()
+    {
+        Console.WriteLine("driving a truck");
+    }
+}
+
+public class Bike
+{
+    public void Drive()
+    {
+        Console.WriteLine("Drive a bike");
+
+
+    }
+}
+
+public class Trucker
+{
+    public void OperateVehicle(Truck truck)
+    {
+        truck.Drive();
+    }
+}
+
+public class Cyclist
+{
+    public void OperateVehicle(Bike bike)
+    {
+        bike.Drive();
+    }
+}
+
+
+
+
+
+```
+
+Yo. koodiesimerkissä on tahallinen virhe. Virhe tulee siitä, kun pyöräilijä yrittää ajaa rekkaa
+
+```cs
+
+namespace IExampleProgram;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        var truck = new Truck();
+        var trucker = new Trucker();
+
+        var cyclist = new Cyclist();
+        var bike = new Bike();
+
+        cyclist.OperateVehicle(bike);
+
+        trucker.OperateVehicle(truck);
+        // tämä ei onnistu, koska pyöräilijä ei voi ajaa rekkaa
+        // koodia ei pysty suorittamaan, koska se ei mene kääntäjästä läpi
+        // näin pitää ollakin
+        // cyclist.OperateVehicle(truck);
+
+        // tämä tuli uutena
+
+        // MasterDriver voi ajaa molempia ajoneuvoja, koska ne molemmat
+        // implementoivat IDrive-rajapinnan
+        var master = new MasterDriver();
+        master.OperateVehicle(bike);
+        master.OperateVehicle(truck);
+
+
+    }
+}
+
+// nimi voi olla myös Drivable
+// konkreettinen metodin toteutus tulee
+// luokkaan, joka käyttää rajapintaa
+// tänne vaan kuvaus siitä, millainen metodin pitää olla
+public interface IDrive
+{
+    void Drive();
+}
+
+
+// nyt Truck-luokka käyttää IDrive-rajapintaa
+public class Truck : IDrive
+{
+
+    public void Drive()
+    {
+        Console.WriteLine("driving a truck");
+    }
+}
+// nyt Bike-luokka käyttää IDrive-rajapintaa
+public class Bike : IDrive
+{
+    public void Drive()
+    {
+        Console.WriteLine("Drive a bike");
+
+
+    }
+}
+
+public class Trucker
+{
+    public void OperateVehicle(Truck truck)
+    {
+        truck.Drive();
+    }
+}
+
+public class Cyclist
+{
+    public void OperateVehicle(Bike bike)
+    {
+        bike.Drive();
+    }
+}
+
+public class MasterDriver
+{
+    // Huom! Tässä tietotyyppinä on IDrive
+    // se mahdollistaa kaikkien konkreettisten classien käyttämisen
+    // tietotyyppinä, jotka implementoivat kyseisen IDrive-rajainnan
+    public void OperateVehicle(IDrive vehicle)
+    {
+        vehicle.Drive();
+    }
+}
+
+
+
+
+```
+
+### Interface Injection
+
+Interface injection on dependency injectionin, tarkemmin sanottuna constructor injectionin, variaatio, jossa konkreettisen tietotyypin sijasta constuctorille injectatataan tietotyyppinä interface. 
+
+```cs
+// interface injection
+public class UsersController(IUserService service) : ControllerCustomBase {
+
+}
+
+```
 
