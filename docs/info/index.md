@@ -168,7 +168,7 @@ Jatka verkkokauppa-tehtävää jonka teet tehtävissä 6 ja 7. Voit valita itse 
 
 Yksittäiset tehtävät ovat aina yhteen teemaan keskittyviä pienempiä kokonaisuuksia, joissa joutuu yhdistämään aiemmin opittuja asioita uusiin
 
-Tehtävät ovat yksinkertaisempia ja pienempiä kuin projektitoteutus, joten niitä pitää tehdä paljon, jos haluaa hyvän arvosanan.
+Tehtävät ovat yksinkertaisempia ja pienempiä kuin projektitoteutus.
 
 <table>
   <thead>
@@ -212,7 +212,40 @@ Tehtävät ovat yksinkertaisempia ja pienempiä kuin projektitoteutus, joten nii
 
 ## ARVOSANAN MUODOSTUMINEN
 
-Opintojakson pisteet määräytyvät projektin ja yskittäisten tehtävien ominaisuuksien mukaan. Pisteet julkaistaan myöhemmin, kun tehtävät ja projekti on päätetty
+Opintojakson pisteet määräytyvät projektin ja yskittäisten tehtävien ominaisuuksien mukaan.
+
+
+<table>
+  <thead>
+    <tr>
+      <th>Arvosana</th>
+      <th>Pisteet</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>50</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>60</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>70</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>80</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>90</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ### HUOMIOITAVAA PALAUTUKSESTA
 
@@ -250,7 +283,7 @@ Opintojakson pisteet määräytyvät projektin ja yskittäisten tehtävien omina
 
   Opettajilla on nykyään lupa poistaa opintojakson loputtua opintojaksolta opiskelijat, jotka eivät ole tehneet yhtään palautusta
 
-  <strong>Jos siis et tee yhtään palautusta opintojakson loppuun menneessä, sinut poistetaan toteutukselta kokonaan. Tällaisessa tapauksessa arvosanan korotus ei onnistu, vaan opintojakso pitää käydä alusta asti uudelleen seuraan kerran, ku se järjestetään</strong>
+  <strong>Jos siis et tee yhtään palautusta opintojakson loppuun menneessä, sinut poistetaan toteutukselta kokonaan. Tällaisessa tapauksessa arvosanan korotus ei onnistu, vaan opintojakso pitää käydä alusta asti uudelleen seuraavan kerran, kun se järjestetään</strong>
 
   :::
 
