@@ -678,6 +678,10 @@ Ei varsinaisesti juuri siksi, koska interfacea ei Pythonissa ole. Pythonin tapau
 
 :::
 
+### Tehtävä 5.
+
+Tee web-sovellus (rest api), jossa teet CRUD-toiminnallisuudet käyttäjille, tuotteille ja ajoneuvoille. Käytä aiempien tehtävien tietokantaa. Suunnittele sovelluksen arkkitehtuuri niin, että se on modulaarinen ja sovelluksesta voidaan vaihtaa esim. datalähde toiseen ilman isoja muutoksia koodiin. 
+
 
 
 

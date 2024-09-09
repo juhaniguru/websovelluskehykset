@@ -251,7 +251,5 @@ Yo. esimerkissä käytetään myös jo tutuksi tulleita periytymistä ja polymor
 :::
 
 
-### Tehtävä 5.
 
-Tee web-sovellus (rest api), jossa teet CRUD-toiminnallisuudet käyttäjille, tuotteille ja ajoneuvoille. Käytä aiempien tehtävien tietokantaa. Suunnittele sovelluksen arkkitehtuuri niin, että se on modulaarinen ja sovelluksesta voidaan vaihtaa esim. datalähde toiseen ilman isoja muutoksia koodiin. 
 

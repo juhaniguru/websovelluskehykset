@@ -1,5 +1,17 @@
 # ASP .Net Core
 
+:::tip Miksi frameworkiksi on valittu Asp .Net Core?
+
+Työkalut on valittu kolmella perusteella
+
+- Opettaja on itse käyttänyt niitä töissä ja osaa auttaa hyvin tarvittaessa
+- Opiskeljoille C# on tuttu ennestään
+- Stack Overflown <a href="https://survey.stackoverflow.co/2024/technology#admired-and-desired">kehittäjätutkimusen tulosten perusteella.</a> Linkistä avautuvalla sivulla on kohta Web frameworks and technologies.
+
+Asp .Net Core on eniten ihailtu web-framework (joka ei ole fronttiframework). Sen lisäksi, että se on haluttu, 72% sitä jo käyttävistä haluaa jatkaa sen käyttöä.
+
+:::
+
 ASP .Net Core on crossplatform eli se on tehty toimimaan useimmilla eri alustoilla.
 
 ## Asenuus
@@ -46,7 +58,7 @@ Komento palauttaa listan asennuksista. Minulla on esimerkkikuvassa asennettu use
 
 Toinen merkittävä tekijä on .net runtimen versio. 
 
-:::info Huomaa, että nämä eivät välttämä ole samat
+:::info Huomaa, että nämä eivät välttämättä ole samat
 
 Huomaa, että SDK:n ja runtimen versiot eivät välttämättä ole täsmälleen samat. Tämä on täysin OK
 
@@ -896,6 +908,30 @@ builder.Services.AddScoped<IUserService, UserService>();
     
 
 :::
+
+### Tuntiharjoitus 5.
+
+Tutki itsenäisesti, miten voit tehdä UsersControlleriin muut CRUD-ominaisuudet ja toteuta ne.
+
+### Tehtävä 6.
+
+Tee C#:lla ja Asp .Net Corella webapi verkkokaupalle rajoitetuin ominaisuuksin.
+
+Tähän tehtävään tarvittavat tarkemmat speksit toimitetaan myöhemmin
+
+- Ominaisuudet:
+    * Kaikkien tuotteiden listaus
+    * Tuotteiden listaus kategorioittain
+    * Kategroiden listaus
+
+
+
+:::danger HUOM!
+
+Sivulle tulee vielä lisää materiaalia opintojakson edetessä.
+
+:::
+
 
 
 
