@@ -926,7 +926,7 @@ Tähän tehtävään tarvittavat tarkemmat speksit toimitetaan myöhemmin
 
 
 
-## Autentikaatio ja autorisointi
+## Autentikaatio
 
 :::info
 
@@ -1526,7 +1526,7 @@ Nämä ovat JWT:n speksin standarditietoja. Sitä, mikä JWT on, emme käy tarke
 ![aspnetcore](./images/25.png)
 
 
-
+## Autorisointi
 
 
 
