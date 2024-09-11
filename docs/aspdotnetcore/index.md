@@ -1026,6 +1026,12 @@ public class AddUserReq
 
 ```
 
+:::tip Mistä Asp .Net Core tietää, mistä parametrit tulevat
+
+Kun käyttää HttpPostia ja Controllerin routehandlerille annetaan parametrinä ns. complex type, eli luokka, niin Asp .Net Core hakee sitä automaattisesti requst bodysta
+
+:::
+
 5. Lisää IUserService-luokkaan Create-metodi
 
 ```cs
@@ -1527,6 +1533,100 @@ Nämä ovat JWT:n speksin standarditietoja. Sitä, mikä JWT on, emme käy tarke
 
 
 ## Autorisointi
+
+Autorisointi eli pääsyrajoitukset toimivat ASP .Net Coressa sisäänrakennetulla <i>Authorize</i>-attribuutilla. Katsotaan tästä esimerkki.
+
+1. Otetaan ensin autorisointi käyttöön <i>Program.cs</i>
+
+```cs
+
+
+
+// yläpuolella builder.Services.AddAuthentication...
+
+builder.Services.AddAuthorization();
+
+
+
+// alapuolella on builde.Services.AddControllers();
+
+
+```
+
+Tässä esimerkissä aiempaa UsersControllerin GetAllUsers-metodia on muutettu lisäämällä sen yläpuolelle [Authorize]
+
+```cs
+
+[HttpGet]
+// tämä on lisätty
+[Authorize]
+public async Task<ActionResult<List<AppUser>>> GetAllUsers()
+{
+
+    
+
+    var users = await service.GetAll();
+    return Ok(users);
+
+}
+
+
+```
+
+Attribuutti estää sisäänkirjautumattoman käyttäjän pääsyn routeen.
+
+![aspnetcore](./images/26.png)
+
+Kuten yo. kuvasta näkyy, kun Authorization-header on pois päältä (sitä ei lähetetä requestin mukana), saadaan palvelimelta vastukseksi <i>401 Unauthorized</i>
+
+![aspnetcore](./images/27.png)
+
+Kun Authorization-header lähetetään oikealla JWT-tokenilla palvelimelle, saamme käyttäjät vastauksena, kuten kuuluukin
+
+### Authorization Policyt
+
+Harvoin kuitenkaan autorisointi on web-sovelluksessa niin suoraviivaista, että käyttäjä pääsee kaikkiin resursseihin kiinni, jos on vain kirjautunut sisään. Hyvin useinhan käyttäjä saa rekisteröidyttyään roolin, jonka mukaan hänen oikeuksiaan voidaan edelleen määritellä.
+
+1. ASP .Net Coressa on sisäänrakkennettuna myös roolipohjainen autorisointi. Otetaan se käyttöön nyt.
+
+```cs
+
+// Program.cs
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("admin"));
+    // Add more policies as needed
+});
+
+```
+
+Yo. koodissa lisäämme oman uuden policyn ja annamme sille nimeksi <i>RequireAdminRole</i>
+
+policy.RequireRole-metodia kutsumalla kerromme, mitä roolia tämä policy koskee.
+
+
+
+2. Muutetaan Controllerin koodi käyttämään meidän omaa Policya
+
+```cs
+
+[HttpGet]
+// Authorize-attribuutille voi
+// antaa käytettävän policyn nimen attribuuttina
+[Authorize(Policy = "RequireAdminRole")]
+public async Task<ActionResult<List<AppUser>>> GetAllUsers()
+{
+
+    
+
+    var users = await service.GetAll();
+    return Ok(users);
+
+}
+
+
+```
 
 
 
