@@ -926,11 +926,280 @@ Tähän tehtävään tarvittavat tarkemmat speksit toimitetaan myöhemmin
 
 
 
-:::danger HUOM!
+## Autentikaatio ja autorisointi
 
-Sivulle tulee vielä lisää materiaalia opintojakson edetessä.
+:::info
+
+Oikeassa tuotantokäyttöön tarkoitetussa sovelluksessa kannattaa käyttää valmista autentikaatiota (esim. micorsoft.aspnetcore.identity). Tämän opintojakson näkökulmasta Identityn käyttö tässä vaiheessa ei ole paras tapa oppia uusia asioita.
+
+<strong>Jos käytämme nyt Identityä, opit konffaamaan Identityn käyttöön, mutta kun teemme autentikaation ja autorisoinnin itse, opit käyttämään Middlewareja, Attribuutteja ja Dependency Injectionia vielä lisää</strong>
 
 :::
+
+### Käyttäjän luominen
+
+1. Lisätään UsersControlleriin käyttäjän luontia varten routehandler
+
+```cs
+
+
+[HttpPost]
+// classit AddUserRes ja AddUsreReq puuttuvat vielä
+public async Task<ActionResult<AddUserRes>> CreateUser(AddUserReq req)
+{
+    // myös UserServicesta puuttuu Create-metodi
+    var user = await service.Create(req);
+    return Ok(user);
+}
+
+```
+
+:::info Mitkä AddUserRes ja AddUserReq?
+
+Näitä meillä ei vielä ole. Ennen tätä olemme palauttaneet AppUsereita UsersControllerin GetAllUsers-routehandlerista, mutta tämä ei kannata
+
+<strong>Model-luokat ovat tietokannan kanssa keskustelua varten, mutta jos käyttäjille pitää näyttää jotakin, älä palauta salasanoja ja passwordSaltia</strong>
+
+
+
+:::
+
+2. Luo API-kansion alle uusi kansio <i>DTOs</i>
+
+:::info DTO?
+
+
+DTO tulee sanoista <strong>D</strong>ata<strong>T</strong>ransfer<strong>O</strong>bject. Ne ovat käytännössä luokkia niin kuin Model-luokatkin, mutta niillä kuljetetaan dataa rajapinnan kautta ohjelmaan sisään ja ohjelmasta ulos
+
+:::
+
+3. Lisää DTOs-kansioon Class AddUserRes
+
+```cs
+
+namespace API.DTOs;
+
+public class AddUserRes
+{
+    public required int Id { get; set; }
+    public required string UserName { get; set; }
+}
+
+
+```
+
+4. Lisää samaan kansioon AddUserReq-luokka
+
+```cs
+
+
+
+using System;
+
+namespace API.DTOs;
+
+public class AddUserReq
+{
+    public required string UserName { get; set; }
+    public required string Password { get; set; }
+    // jos requestista puuttuu role-avain, käytetään useria oletuksena
+    public string Role { get; set; } = "user";
+
+}
+
+
+
+
+```
+
+5. Lisää IUserService-luokkaan Create-metodi
+
+```cs
+
+using System;
+using API.DTOs;
+using API.Models;
+using Microsoft.AspNetCore.Identity.Data;
+
+namespace API.Services.Interfaces;
+
+public interface IUserService
+{
+    
+    // jos sinulla on täällä miuta metodeja, ne pysyvät ennallaan
+    Task<AddUserRes> Create(AddUserReq req);
+
+    
+}
+
+```
+
+Tämän jälkeen UserServicesta tulee virhe. <strong>Lisäsit uuden Create-metodin rajapintaan, jota ei ole vielä konkreettisesti tehty UserServiceen</strong>
+
+6. Lisätään Create-metodille konkreettinen toteutus
+
+```cs
+// muu täällä pysyy ennallaan
+public Task<AddUserRes> Create(AddUserReq req)
+{
+    throw new NotImplementedException();
+}
+
+```
+
+Muista, että serviceen tulee asynkronisia tietokantaopieraatioita, joten Create pitää merkata asynciksi
+
+7. Lisää koodi metodiin 
+
+
+```cs
+
+
+public async Task<AddUserRes> Create(AddUserReq req)
+    {
+        // HMACSHA512ia käytetään salasanan hashaykseen
+        // sekä Saltin lisäämiseen 
+        using var hmac = new HMACSHA512();
+
+        var user = new AppUser
+        {
+            UserName = req.UserName,
+            Role = req.Role,
+            // hmac.Key on randomi salt, jonka loit automaattisesti
+            // kun teit hmac-instanssin
+            PasswordSalt = hmac.Key,
+            // ComputeHash tekee hashin selkokielisestä salasanasta
+            HashedPassword = hmac.ComputeHash(
+                // Encoding.UTF8.GetBytes?
+                // req.Password on string-tyyypiä, mutta ComputeHash
+                // haluaa parametring byte[]-arrayna
+                // GetBytes siis palauttaa merkkijonosta byte[] arrayn.
+
+                Encoding.UTF8.GetBytes(req.Password)
+            )
+
+        };
+        // tämä tekee käytännössä insertin Users-tietokantatauluun
+        context.Users.Add(user);
+        // insert pitää vahvistaa, jotta rivi oikeasti tallennetaan
+        await context.SaveChangesAsync();
+
+        // tallennuksen jälkeen Id-attribuutilla on arvo
+        return new AddUserRes {
+            Id = user.Id,
+            UserName = user.UserName
+        };
+
+```
+
+:::info Koodissa on virhe
+
+Olemme luoneet AppUser-modelin jo aiemmin ja siellä salt ja hashedpassword ovat string-tietotyyppiä. Muutetaan modelia
+
+:::
+
+```cs
+
+using System;
+
+namespace API.Models;
+
+public class AppUser
+{
+    // Muista, käyttää Id-propertysta juuri tällaista nimeä
+    // asennamme EntityFrameWorkCore-riippvuuden Nugetista
+    // EF Core tekee autom. Id-attribuutista tietokannan
+    // taulun perusavaimen
+    public int Id { get; set; }
+    public required string UserName { get; set; }
+    public required string Role { get; set; }
+    // näiden pitää olla byte[]-tietotyyppiä
+    public required byte[] PasswordSalt { get; set; }
+    public required byte[] HashedPassword { get; set; }
+}
+
+
+```
+
+Nyt käyttäjien salasanat eivät ole enää selkokielisiä.
+
+:::info käyttäjänimet eivät ole yksilöllisiä.
+
+Tietokannassa ei ole nyt rajoitetta UserName-sarakkeelle UNIQUE-rajoitetta.
+
+:::
+
+### Varmistetaan, että käyttäjänimi pysyy yksilöllisenä
+
+Tämän voi tehdä koodin päähän tai tietokannan päähän
+
+#### Koodilla
+
+1. Lisätään UserServiceen metodi tarkistusta varten
+
+```cs
+
+private async Task<bool> CheckUsernameTaken(string username)
+    {   
+        // AnyAsync palauttaa true tai false sen mukaan löytyykö hakehdolla mitään
+
+        
+        var taken = await context.Users.AnyAsync(u => u.UserName.ToLower() == username.ToLower());
+        return taken;
+
+    }
+
+```
+
+2. Käytetään yo. metodia Create-metodissa
+
+```cs
+
+public async Task<AddUserRes> Create(AddUserReq req) {
+
+    var taken = await CheckUsernameTaken(req.UserName);
+    if (taken)
+    {
+        throw new Exception("username taken");
+    }
+
+    // loput metodista pysyy samana
+}
+
+
+```
+
+Emme ole aiemmin heittäneet poikkeuksia service-layerista. <strong>Nyt poikkeus pitää käsitellä Controllerin puolella</strong>
+
+
+3. Muokataan UsersControllerin routehandleria
+
+```cs
+
+[HttpPost]
+
+        public async Task<ActionResult<AddUserRes>> CreateUser(AddUserReq req)
+        {
+            try
+            {
+                var user = await service.Create(req);
+                return Ok(user);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(new { title = e.Message, error = "Username is taken" });
+            }
+
+
+```
+
+### Login
+
+Nyt, kun salasana on hashatty ja turvallisesti tallessa, katsotaan, miten sisäänkirjautuminen tehdään
+
+1. Luodaan uusi Controller <i>AuthController</i>
+
+
 
 
 
