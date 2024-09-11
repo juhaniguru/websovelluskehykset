@@ -936,6 +936,20 @@ Oikeassa tuotantokäyttöön tarkoitetussa sovelluksessa kannattaa käyttää va
 
 :::
 
+:::tip Miksi teemme aina rekisteröitymisen ja sisäänkirjautumisen
+
+<strong>Käyttäjän rekisteröityminen mahdollistaa sisäänkirjautumisen ja sisäänkirjautuminen mahdollistaa monien uusien ominaisuuksien opettelun</strong>
+
+- Se on web-softissa hyvin tyypillinen käyttötapaus, ja on siksi hyvä osata useimmilla kielillä
+- Meillä on vielä opettelematta
+    * kustomoidujen authorization policyjen luonti, rekisteröinti ja käyttö
+    * kustomoidujen omatekoisten middlewareiden luonti ja käyttö
+
+Nämä ominaisuudet on helpompi opettaa, kun pystymme esim. tarkistamaan, onko käyttäjä kirjautunut sisään.
+
+
+:::
+
 ### Käyttäjän luominen
 
 1. Lisätään UsersControlleriin käyttäjän luontia varten routehandler
@@ -1197,7 +1211,319 @@ Emme ole aiemmin heittäneet poikkeuksia service-layerista. <strong>Nyt poikkeus
 
 Nyt, kun salasana on hashatty ja turvallisesti tallessa, katsotaan, miten sisäänkirjautuminen tehdään
 
-1. Luodaan uusi Controller <i>AuthController</i>
+1. Tehdään IUserServiceen uusi metodin kuvaus <i>Login</i>
+
+:::tip Jos haluat
+
+Voit luoda myös uuden servicen, rajapinnan ja Controllerin
+
+:::
+
+```cs
+
+using System;
+using API.DTOs;
+using API.Models;
+using Microsoft.AspNetCore.Identity.Data;
+
+namespace API.Services.Interfaces;
+
+public interface IUserService
+{
+    
+
+    // kaikki muu pysyy ennallaan
+    // lisää tämä metodi
+
+    Task<LoginRes?> Login(LoginReq req);
+}
+
+
+
+```
+
+:::tip Miksi LoginResin perässä on kysymysmerkki?
+
+Se tarkoitaa, että metodista voi palauttaa <i>null</i>in. Jos tässä tapauksessa käyttäjää ei löydy, käyttäjä on olemassa, mutta salasana on väärin voimme palauttaa controllerin actioniin nullin (poikkeuksen heittämisen sijaan) ja palauttaa käyttäjälle virheilmoituksen.
+
+:::
+
+2. Tehdään nyt uudet DTOsit kirjautumista varten
+
+```cs
+
+
+// LoginRes
+
+public class LoginRes
+{
+
+    public required string Token { get; set; }
+
+}
+
+
+
+```
+
+```cs
+
+// LoginReq
+
+public class LoginReq
+{
+    public required string UserName { get; set; }
+    public required string Password { get; set; }
+}
+
+
+```
+
+Lähetämme palvelimelle käyttäjätunnuksen ja salasanan. Jos nämä ovat oikein, luomme JWT tokenin ja palautamme sen LoginReq-tyyppisenä objektina, jossa on merkkijono Token
+
+3. Lisätään UserServiceen Login-metodi
+
+```cs
+
+// ITokenTool on rajapinta,jonka luomme myöhemmin
+public class UserService(DataContext context, ITokenTool tokenCreator) : IUserService
+{
+
+    public async Task<LoginRes?> Login(LoginReq req)
+    {
+        // FirstOrDefaultAsync palauttaa ensimmäisen rivin tietokannasta, 
+        // johon hakuehto täsmää
+        // kyselynä tämä olisi SELECT * FROM Users WHERE username = ?
+        var user = await context.Users.FirstOrDefaultAsync(u => u.UserName.ToLower() == req.UserName.ToLower());
+        // Pelkkä First heittää poikkeuksen, jos tulosta ei löydy
+        // FirstOrDefault palauttaa nullin, jos tulosta ei löydy
+        if (user == null)
+        {
+            return null;
+        }
+
+        // tässä sama hmac kuin rekisteröitymisessä
+        // mutta nyt constructorille on annettu parametrina
+        // löydetyn käyttäjän salt
+        // saltin pitää nyt olla käyttäjälle rekisteröitymisessä tehty sama salt
+        // jos salt ei ole sama, salasanat eivät koskaan täsmää
+        using var hmac = new HMACSHA512(user.PasswordSalt);
+        // tässä tehdään hash selkokielisestä salasanasta
+        var computedPassword = hmac.ComputeHash(Encoding.UTF8.GetBytes(req.Password));
+        // computedHash on byte[] array, joten se voidaan luupata läpi
+        for (int i = 0; i < computedPassword.Length; i++)
+        {   
+            // jos salasanat eivät täsmää, palautetaan null
+            if (computedPassword[i] != user.HashedPassword[i])
+            {
+                return null;
+            }
+        }
+        
+        // jos salasanat täsmäävät, luodaan jwt token
+        // tätä meillä ei vielä ole
+        var token = tokenCreator.CreateToken(user);
+        // jos tokenin luonti jostakin syystä onnistu
+        // palautetaan null
+        if (token == null)
+        {
+            return null;
+        }
+
+
+
+        // jos tokenin luonti onnistuu,
+        // palauttetaan se controllerin actioniin 
+        ///ja sitä kautta käyttäjälle
+        return new LoginRes
+        {
+            Token = token
+        };
+    }
+}
+
+```
+
+Tehdään nyt tokenin luontiin koodi
+
+4. Luo API-kansioon Tools-kansio ja Tools-kansion alle Interfaces-kansio
+
+5. Luo sen jälkeen Interfaces-kansioon uusi rajapinta <i>ITokenTool</i>
+
+```cs
+
+namespace API.Tools.Interfaces;
+
+public interface ITokenTool
+{
+    string? CreateToken(AppUser user);
+}
+
+
+```
+
+- Asenna nyt kaksi pakettia Nugetista
+    * System.IdentityModel.Tokens.Jwt. Tästä uusin versio on tällä hetkellä 8.02
+    * Microsoft.AspNetCore.Authentication.JwtBearer. Tästä uusin versio tällä hetkellä 8.0.8
+
+6. Luo TokenKey-avain appSettings.json-tiedostoon
+
+Muista, että tämän avaimen pitää olla ainakin 64 merkkiä pitkä ja se on aina pidettävä salassa
+
+```json
+
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "TokenKey": "oma salainen salkjdlkdjsflf avain tähän"
+}
+
+```
+
+7. Luo Tools-kansioon luokka <i>SymmetricToken</i>
+
+```cs
+
+// Tools/SymmetricToken
+
+
+using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using API.DTOs;
+using API.Models;
+using API.Tools.Interfaces;
+using Microsoft.IdentityModel.Tokens;
+
+namespace API.Tools;
+
+// saamme configin automattisesti dependency injectionin avulla
+// muista ottaa ITokenTool-rajapinta käyttöön
+public class SymmetricToken(IConfiguration config) : ITokenTool
+{
+    public string? CreateToken(AppUser user)
+    {
+        // varmista, että appSettingsissä on 
+        // samanlainen kirjoitusasu TokenKeylle
+        var tokenKey = config["TokenKey"];
+        if (tokenKey == null)
+        {
+            return null;
+        }
+
+        // varmista myös, että TokenKey on tarpeeksi pitkä
+        if (tokenKey.Length < 64)
+        {
+            return null;
+        }   
+        
+        // SymmetricSecurityKey on tyyppi, jossa jwt:n luonnissa
+        // ja jwtn tarkistuksessa käytetään samaa avainta (TokenKey)
+        // string pitää muuttaa byte[] arrayksi
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey));
+        // jwt:n allekirjoitus tehdään avainta käyttäen
+        // HMACSha512-algoritimillä
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+
+        // tässä jwt:n sisään laitettavat käyttäjää koskevat asiat
+        // Sub = käyttäjän id
+        // Name = käyttäjänimi
+        // Jti = random merkkijono
+        var claims = new List<Claim> {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Name, user.UserName),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+
+        };
+        // luodaan token claimit on yo. tiedot, jotka menevät sisään
+        // expires on voimassaoloaika (tässä viikko)
+        // SigningCredentials on allekirjoitus joka luotiin ylempänä
+        var _token = new JwtSecurityToken(claims: claims, expires: DateTime.UtcNow.AddDays(7), signingCredentials: credentials);
+        // tässä tehdään tokenista base64 enkoodattu merkkijono
+        // tämä voidaan antaa käyttäjälle kirjautumisen jälkeen
+        return new JwtSecurityTokenHandler().WriteToken(_token);
+
+
+
+
+
+
+
+    }
+}
+
+
+```
+
+8. Otetaan SymmetricToken käyttöön
+
+```cs
+
+// Program.cs
+
+// yläpuolella builder.Services.AddScoped<IUserService, UserService>();
+// UserServicessa kutsumme tokenCreator.CreateToken-metodia
+// framelle pitää kertoa, mistä tuo tokenCreator tulee
+// ja mikä se on
+// tässä taas esimerkki dependency injectionin mahdollistavasta
+// servicen lisäämisestä
+builder.Services.AddScoped<ITokenTool, SymmetricToken>();
+
+// konfataan jwt käyttöön
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o =>
+{
+    // varmistetaan, että TokenKey löytyy
+    var tokenKey = builder.Configuration["TokenKey"] ?? throw new Exception("token key not found");
+    // konfataan tässä, mitä tarkistetaan
+    o.TokenValidationParameters = new TokenValidationParameters
+    {
+
+        // varmistaa allekirjoituksen
+        ValidateIssuerSigningKey = true,
+        // jotta allekirjoituksen voi tarkistaa,
+        // pitää kertoa, mitä avainta allekirjoituksessa käytetään
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey)),
+        // issuerin tarkistus on pois päältä
+        
+        ValidateIssuer = false,
+        // myös audiencen tarkistus on pois päältä
+        ValidateAudience = false
+    };
+
+});
+
+
+```
+
+:::tip Mikä Issuer ja Audience
+
+Nämä ovat JWT:n speksin standarditietoja. Sitä, mikä JWT on, emme käy tarkemmin läpi, koska se ei ole tämän opintojakson osaamistavoitteissa.
+
+<strong>Jos haluat oppia JWT:stä lisää, voit lukea siitä lisää <a href="https://juhaniguru-webapis.onrender.com/auth/#jwt-jsonwebtoken">täältä</a></strong>
+
+:::
+
+### Testataan, että sisäänkirjautuminen toimii
+
+1. Kun kirjaudut sisään, sinulle pitäisi vastauksena tulle JWT-merkkijono, josa on käytätjäsi tietoja
+
+![aspnetcore](./images/24.png)
+
+
+2. mene <a href="https://jwt.io">jwt.io:hon</a> ja liitä rajapinnasta vastauksena saamasi token sivulle
+
+
+
+
+![aspnetcore](./images/25.png)
+
 
 
 
