@@ -1439,6 +1439,7 @@ public class SymmetricToken(IConfiguration config) : ITokenTool
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Name, user.UserName),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.Role, user.Role)
 
         };
         // luodaan token claimit on yo. tiedot, jotka menevät sisään
