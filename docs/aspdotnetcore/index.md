@@ -1512,7 +1512,7 @@ Nämä ovat JWT:n speksin standarditietoja. Sitä, mikä JWT on, emme käy tarke
 
 ### Testataan, että sisäänkirjautuminen toimii
 
-1. Kun kirjaudut sisään, sinulle pitäisi vastauksena tulle JWT-merkkijono, josa on käytätjäsi tietoja
+1. Kun kirjaudut sisään, sinulle pitäisi vastauksena tulle JWT-merkkijono, josa on käyttäjäsi tietoja
 
 ![aspnetcore](./images/24.png)
 
