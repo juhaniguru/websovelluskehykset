@@ -1628,6 +1628,14 @@ public async Task<ActionResult<List<AppUser>>> GetAllUsers()
 
 ```
 
+### Oma authorization policy
+
+Kaikkiin mahdollisiin pääsyrajoituksiin ASP .Net Corellakaan ei ole valmista vastausta. 
+
+Kuvitellaan, että teet pelin backendia. Jokainen pelaaja saa viikottain / kuukausittain ilmaisen lahjan, jos on pelannut tarpeeksi monta tuntia viikossa / kerännyt tarpeeksi kokemuspisteitä (XP) viikossa. Tällainen käyttötapaus on niin tiukasti sidoksissa businesslogiikkaan, ettei sille löydy mistään frameworkista valmista palikkaa. 
+
+Tehdään sellainen itse
+
 
 
 
