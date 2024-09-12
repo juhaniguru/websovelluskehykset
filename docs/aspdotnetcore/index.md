@@ -1636,6 +1636,29 @@ Kuvitellaan, että teet pelin backendia. Jokainen pelaaja saa viikottain / kuuka
 
 Tehdään sellainen itse
 
+1. Luodaan ensin oma ClaimType
+
+```cs
+
+public class SymmetricToken(IConfiguration config) : ITokenTool
+{
+    // tämä on ns. inner / nested class
+    // C#:ssa tämä on täysin toimivaa koodia
+    // nested class on hyvä tapa ryhmitellä koodia, jos
+    // kaksi luokkaa ovat toisiinsa tiukasti sidoksissa
+    // eikä tässä tapauksessa XPClaim-luokalla
+    // ole mtn käyttöä ilman SymmetricToken-luokkaa
+
+    // jos XPClaimia käytettäsiin useammassa luokassa, kannattaisi se luoda erikseen
+    static class XPClaim
+    {
+        public const string XP = "XP";
+    }
+
+    // kaikki muu SymmetriTokenissa pysyy samana
+}
+
+```
 
 
 
