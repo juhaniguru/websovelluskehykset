@@ -1660,6 +1660,72 @@ public class SymmetricToken(IConfiguration config) : ITokenTool
 
 ```
 
+2. Listään tietokantaan Xp-sarake Users-tauluun, josta saamme tiedon 
+
+```cs
+
+using System;
+
+namespace API.Models;
+
+public class AppUser
+{
+    // Muista, käyttää Id-propertysta juuri tällaista nimeä
+    // asennamme EntityFrameWorkCore-riippvuuden Nugetista
+    // EF Core tekee autom. Id-attribuutista tietokannan
+    // taulun perusavaimen
+    public int Id { get; set; }
+    public required string UserName { get; set; }
+    public required string Role { get; set; }
+    public required byte[] PasswordSalt { get; set; }
+    public required byte[] HashedPassword { get; set; }
+
+    // tämä on uusi
+    public int Xp { get; set; }
+}
+
+
+
+```
+
+3. Luodaan uusi migraatio
+
+```sh
+# suorita komento API-kansiossa
+# tämä komento luo uuden migraatiskriptin
+dotnet ef migrations add AddXpColumn
+
+```
+
+4. Päivitetään tietokanta
+
+```sh
+
+dotnet ef database update
+
+```
+
+5. Päivitetään CreateToken-metodi
+
+```cs
+
+// SymmetricToken.cs
+// CreateToken-metodi
+
+// kaikki muu pysyy ennallaan
+
+var claims = new List<Claim> {
+    new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+    new Claim(JwtRegisteredClaimNames.Name, user.UserName),
+    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+    new Claim(ClaimTypes.Role, user.Role),
+    // tämä on uusi
+    new Claim(XPClaim.XP, user.Xp.ToString())
+
+};
+
+```
+
 
 
 
