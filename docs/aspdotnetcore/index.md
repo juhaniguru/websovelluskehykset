@@ -1980,6 +1980,16 @@ public ActionResult<string> GetRewards()
 
 ```
 
+:::info OnAuthorization on synkroninen
+
+Totta, IAuthorizationHandler-interfacen OnAuthorization-metodi toimii synkronisesti (siitä ei voi palauttaa Taskia). Kääntäjä kuitenkin sallii asynkroniset operaatiot, kuten tietokantahaut tässä metodissa, kunhan käytetään async/awaitia. OnAuthorization-metodi ei siis mene eteenpäin ennenkuin tietokantahaku on suoritettu.
+
+<strong>Jos joudut käyttämään raskaita asynkronisia operaatioita, kuten tietokantahaut ja API-requestit tässä metodissa, kannattaa se korvata esim. middlewarella</strong>
+
+:::
+
+## Middlewaret
+
 
 
 
