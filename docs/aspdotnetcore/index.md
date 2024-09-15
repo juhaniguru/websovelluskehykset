@@ -1831,6 +1831,23 @@ builder.Services.AddScoped<IAuthorizationHandler, XpAuthorizationHandler>();
 
 ```
 
+10. Testataan omaa policya
+
+Lisää koodi UsersControlleriin
+
+```cs
+
+[HttpGet("account/rewards")]
+// tähän routeen ei pääse, jos Xp-avain puuttuu jwt-tokenista
+// tai sen arvo on alle 1000
+[Authorize(Policy = "Require1000Xp")]
+public ActionResult<string> GetRewards()
+{
+    return Ok("");
+}
+
+```
+
 
 
 
