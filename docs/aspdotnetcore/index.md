@@ -1726,12 +1726,110 @@ var claims = new List<Claim> {
 
 ```
 
+6. Lisätään Policies-kansio ja alikansiot
+
+Luo API-kansioon <i>Policies</i>-kansio ja sinne alikansiot <i>Policies/Requirements</i> ja <i>Policies/Handlers</i>
 
 
 
+7. Lisää <i>Requirements</i>-kansioon uusi luokka <i>XpRequirement</i>
+
+```cs
+
+// Policies/Requirements/XpRequirement
+
+using System;
+using Microsoft.AspNetCore.Authorization;
+
+namespace API.Policies.Requirements;
+
+// IAuthorizationRequirement on tyhjä rajapinta, jota voidaan käyttää tietotyyppinä custom policyille
+public class XpRequirement : IAuthorizationRequirement
+{
+    public XpRequirement(string xp)
+    {
+        Xp = xp;
+    }
+
+    public string Xp { get; }
+
+
+}
 
 
 
+```
+
+8. Lisää Handlers-kansioon uusi luokka <i>XpAuthorizationHandler</i>
+
+```cs
+
+using System;
+using System.Reflection.Metadata;
+using API.Policies.Requirements;
+using Microsoft.AspNetCore.Authorization;
+
+namespace API.Policies.Handlers;
+
+// oma AuthorizationHandler preii AuthorizationHandler-luokan
+// perivälle luokalle annetaan oma custom requirement, jotta
+// handler tietää, mitä vaatimusta vasten jwt:n arvo tarkistetaan
+public class XpAuthorizationHandler : AuthorizationHandler<XpRequirement>
+{
+    // HandleRequirementAsync tulee base-luokasta
+    protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, XpRequirement requirement)
+    {
+        // context.User sisältää jwt:n claimit
+        // jos jwt sisältää claimin XP,
+        // mennään eteenpäin
+        var xpClaim = context.User.FindFirst(c => c.Type == "XP");
+        if (xpClaim != null)
+        {
+            int parsedXp;
+
+            // koska Claimin Value:n tietotyyppi on string
+            // muutetaan se kokonaisluvuksi
+            var success = int.TryParse(xpClaim.Value, out parsedXp);
+            // jos claimissa on numeerinen arvo, jonka parsetus intiksi onnistuu
+            if (success)
+            {
+                // jos claimista saatu Xp on suurempi / on yhtä suuri kuin
+                // meidän määrittämämme arvo
+                // silloin päästään eteenpin
+                if (parsedXp >= requirement.Xp)
+                {
+                    context.Succeed(requirement);
+                }
+            }
+        }
+
+        // tämä pitää palauttaa, vaikka 
+        // vaatimus ei täyttyisikään
+        return Task.CompletedTask;
+    }
+}
+
+
+```
+
+9. Rekisteröidään oma Policy
+
+
+```cs
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("admin"));
+    // tämä on uusi
+    options.AddPolicy("Require1000Xp", policy => policy.Requirements.Add(new XpRequirement(1000)));
+});
+
+// tämä myös
+
+builder.Services.AddScoped<IAuthorizationHandler, XpAuthorizationHandler>();
+
+
+```
 
 
 
