@@ -1861,7 +1861,7 @@ Usein muuttuvia tietoja ei kannata tosiaankaan tallentaa tokeniin, jos se muuttu
 
 ## Oma attribute
 
-Tähän menneessä olemme käyttäneet vain valmista Authorize-attribuuttia, jolle olemme tehneet oman policyn, mutta jso Xp pitäisi lukea tietokannasta mahdollisimman ajantasaisen tuloksen saamiseksi, luoda oma attribuutti, jossa tieto haetaan kannasta
+Tähän menneessä olemme käyttäneet vain valmista Authorize-attribuuttia, jolle olemme tehneet oman policyn, mutta jos Xp pitäisi lukea tietokannasta mahdollisimman ajantasaisen tuloksen saamiseksi, on parempi luoda oma attribuutti, jossa tieto haetaan kannasta
 
 1. Lisää API-kansioon <i>Attributes</i>-kansio
 
