@@ -1848,6 +1848,138 @@ public ActionResult<string> GetRewards()
 
 ```
 
+Attrbuutit ja omat policyt ovat yksinkertainen autorisoititapa, jos tieto luetaan suoraan tokenista.
+
+Tässä tapauksessa access token on voimassa 7 päivää. Jos pelaaja saa päivässä 1000 kokemuspistettä, hän olisi oikeutettu palkintoihin jo päivän kuluttua, mutta saa ne vasta viikon kuluttua, kun token päivittyy (tai aiemmin, jos käyttäjä kirjautuu sisään uudelleen aiemmin)
+
+
+:::info Mikä neuvoksi?
+
+Usein muuttuvia tietoja ei kannata tosiaankaan tallentaa tokeniin, jos se muuttuu harvoin. <strong>Parasta on lukea Xp tietokannasta</strong>
+
+:::
+
+## Oma attribute
+
+Tähän menneessä olemme käyttäneet vain valmista Authorize-attribuuttia, jolle olemme tehneet oman policyn, mutta jso Xp pitäisi lukea tietokannasta mahdollisimman ajantasaisen tuloksen saamiseksi, luoda oma attribuutti, jossa tieto haetaan kannasta
+
+1. Lisää API-kansioon <i>Attributes</i>-kansio
+
+2. Lisää Attributes-kansioon <i>XpAuthorizationAttribute</i>-luokka
+
+```cs
+
+using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using API.Models;
+using API.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+
+namespace API.Attributes;
+
+// käytetään IAuthorizatonFilter-rajapintaa, koska
+// attribuutti liittyy autorisointiin
+// toinen mahdollinen rajapinta olisi IActionFilter
+// sitä voidaan käyttää, jos attribuutti ei liity autorisointiin
+public class XpAuthorizationAttribute(int requiredXp) : Attribute, IAuthorizationFilter
+{
+    // OnAuthorization tulee IAuthorizationFilter-interfacesta
+    public async void OnAuthorization(AuthorizationFilterContext context)
+    {
+
+        // var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<XpAuthorizationAttribute>>();
+
+
+        // servicejä ei pysty injektoimaan konstruktoriin
+        // mutta servicen pystyy hakemaan tällä tavalla
+        var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
+
+        if (userService == null)
+        {
+            // jos serviceä ei löydy, palautetaan 401
+            context.Result = new UnauthorizedResult();
+            return;
+        }
+        // tämänhän pitäisi olla sub, ei nameidentifier
+        // asp .net core toimii niin, että sub claim mäpätään nameidentifieriksi
+        // jos haluat käyttää sub-claimia nameidentifierin sijaan
+        // pitää AddAuthentication-kutsussa määrittää MapInboundClaims falseksi
+
+        // haetaan käyttäjäid claim 
+        var id = context.HttpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+
+        if (id == null)
+        {
+            // jos claimia ei löydy, käyttäjä ei ole kirjautunut 
+            // sisään ja palautetaan 401
+            context.Result = new UnauthorizedResult();
+            return;
+        }
+
+        int parsedId;
+        
+        // jos claim löytyy, muutetaan sen arvo intiksi
+        var success = int.TryParse(id.Value, out parsedId);
+        if (!success)
+        {
+
+            context.Result = new UnauthorizedResult();
+            return;
+        }
+
+        // haetaan käyttäjä id:n perusteella
+        var user = await userService.GetById(parsedId);
+        if (user == null)
+        {
+            context.Result = new UnauthorizedResult();
+            return;
+        }
+
+
+        // jos käyttäjä löytyy,
+        // tarkistetaan, onko käyttäjä Xp:n arvo
+        // yli vaaditun xp:n
+        if (user.Xp < requiredXp)
+        {
+            // huom, jos xp:tä ei ole tarpeeksi
+            // palautetaan 403 (forbidden)
+            context.Result = new ForbidResult();
+            return;
+        }
+
+        // jos homma Ok, ei tarvitse palauttaa mitään
+
+
+    }
+
+
+}
+
+
+```
+
+3. Otetaan attribuutti käyttöön
+
+```cs
+
+[HttpGet("account/rewards")]
+
+//[Authorize(Policy = "Require1000Xp")]
+// nyt custom policy on korvattu omalla attribuutilla, 
+// joka luotiin äsken. Arvo 10 on requiredXp
+// Huom nimeämiskäytönnön mukaan luokan nimessä on Attribute
+// mutta käytettäessä sitä ei mainita
+// tänne pääsee siis vain jos xp tietokannassa käyttäjällä on yli 10
+[XpAuthorization(10)]
+public ActionResult<string> GetRewards()
+{
+    return Ok("");
+}
+
+```
+
 
 
 
