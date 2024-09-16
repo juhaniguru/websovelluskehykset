@@ -1991,6 +1991,211 @@ Totta, IAuthorizationHandler-interfacen OnAuthorization-metodi toimii synkronise
 ## Middlewaret
 
 
+![aspnetcore](./images/28.png)
+
+Kuten yo. kuvassa, middlewareja voi "kiinnittää" reqeust ja myös response pipelineen.
+
+:::info Mikä request pipeline?
+
+Request pipelinellä tarkoitataan sitä, että kun asiakkaalta saapuu pyyntö palvelimelle, alkaa putki. Tähän putkeen voi liittää erilaisia middlewareja, jotka suoritetaan peräkkäin ja vuorotellen, kunnes putki loppuu. Kun putki loppuu request on saapunut perille controllerin actioniin.
+
+:::
+
+Middlewareilla voi siis vaikuttaa sisääntuleviin requesteihin jo ennen kuin ne saapuvat päämääräänsä eli niille takoitettuihin controllerin actioneihin.
+
+### Q&A
+
+:::tip Pystyyhän attributellakin vaikuttamaan requestin kulkuun, mihin tarvitsen middlewarea
+
+Totta, teimme aiemmin <i>XpAuthorizationAttributen</i>, jolla pystyimme estämään käyttäjän pääsyn routeen, jos XP:tä ei ollut tarpeeksi. On kuitenkin muutamia syitä, miksi middleware on parempi
+
+- <strong>Attributea voi käyttää vain controllerin tai actionin kanssa yhdessä, mutta attribute saadaan kerralla käyttöön kaikkiin requesteihin, jos tarvitaan.</strong>
+
+- <strong>Middlewaresta on aidosti asynkronisen</strong>
+
+- <strong>Koska middlewaret suoritetaan request pipelinessä, niissä toimii automaattisesti ASP .Net Coren sisäänrakennettu dependency injection</strong>
+    
+
+:::
+
+:::tip Hetkinen! Mitä, jos en halua, että requstmiddlewareni suoritetaan jokaisella requestilla
+
+Oletuksena tosiaan middlewaret suoritetaan jokaisella kyselyllä. Tämä on hyödyllinen ominaisuus esim. keskitettyyn lokitukseen ja keskitettyyn virheenkäsittelyyn. <strong>On kuitenkin täysin mahdollista rajoittaa middlewaren suoritus tiettyihin routeihin käyttämällä apuna esim. attribuutteja</strong> Katsotaan tästä esimerkki myöhemmin.
+
+
+:::
+
+:::tip Mistä tiedän valitsenko attribuutin vain middlewaren?
+
+Tähän ei ole olemassa yhtä yksinkertaista vastausta, mutta 
+- käytä middlewarea, jos:
+    * esim. autorisointilogiikkasi sisältää asynkronista koodia (tietokantakyselyt / rajapintakyselyt)
+    * tarvitset ominaisuutta monessa useissa requesteissa
+    * sinun tarvitsee manipuloida requestin sisältöä ennen sen saapumista controllerin actioniin
+    * tarvitset koodissasi jotakin rekisteröityä serviceä (koska autom. dependency injection)
+
+- käytä attribuuttia jos
+    * esim. autorisointilogiikkasi on yksinkertainen ilman asynkronista koodia (tarkistat tiedon pelkästään jwt:n claimista)
+    * et tarvitse dependency injectionia
+    * et tarvitse ominaisuutta kovin monessa reqeustissa
+
+
+:::
+
+Tehdään nyt aiemmin tehty <i>XpAuthorizationAttributen</i> toiminnallisuus middlewarea käyttäen
+
+1. Luo uusi kansio API-kansion alle: <i>Middlewares</i>
+
+2. Lisää XpAuthorizatonMiddleware-luokka Middlewares-kansioon
+
+```cs
+
+using System;
+using System.Security.Claims;
+using API.Models;
+using API.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+
+namespace API.Middlewares;
+
+// IMiddlewaresta tulee InvokeAsync
+public class XpAuthorizationMiddleware(IUserService service) : IMiddleware
+{
+    // next-metodia kutsutaan, kun mennään middlewaresta seuraavaan vaiheeseen
+    // se voi olla joko seuraava middleware tai controllerin action
+    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+    {
+
+        // tässä luodaan objekti virhesanomaa varten
+        // samaa sanomaa voidaan käyttää useassa paikassa,
+        // siksi se alustetaan ylimpänä
+        var unAuthorizedResponse = new { title = "Unauthorized" };
+
+
+        // sama kuin attributessa: sub-claim
+        var id = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+        if (id == null)
+        {
+            // jos subia ei ole, käyttäjä ei ole kirjautunut sisään
+            // silloin palautetaan vastaus
+            context.Response.StatusCode = 401; // Unauthorized
+            await new ObjectResult(unAuthorizedResponse).ExecuteResultAsync(new ActionContext { HttpContext = context });
+            // muista lopettaa metodin suoritus vastauksen jälkeen
+            // tämä on ns. short-circuit
+            return;
+        }
+
+        // jos claim löytyy, silloin parsitaan se intiksi
+        int parsedId;
+
+        var success = int.TryParse(id.Value, out parsedId);
+        // taas sama kuin attributessa: jos sub ei ole integeriksi sopiva
+        // silloin käyttäjä ei ole kirjautunut sisään
+        if (!success)
+        {
+            context.Response.StatusCode = 401; // Bad Request
+            await new ObjectResult(unAuthorizedResponse).ExecuteResultAsync(new ActionContext { HttpContext = context });
+            return;
+        }
+        // sama kuin attributessa: kun käyttäjän id löytyy subista, 
+        // voidaan hakea sisäänkirjautunut käyttäjä
+        var user = await service.GetById(parsedId);
+        // jos käyttäjää ei löydy, palautetaan 401
+        if (user == null)
+        {
+            context.Response.StatusCode = 401; // Bad Request
+            await new ObjectResult(unAuthorizedResponse).ExecuteResultAsync(new ActionContext { HttpContext = context });
+            return;
+        }
+        // jos käyttäjä löytyy, tarkistetaan, onko xpaa tarpeeksi
+        if (user.Xp < 10)
+        {
+            // vasta täällä palautetaan 403, koska kaikki on muuten kunnossa
+            var fordibResponse = new { title = "Forbidden" };
+            context.Response.StatusCode = 403; // Bad Request
+            await new ObjectResult(fordibResponse).ExecuteResultAsync(new ActionContext { HttpContext = context });
+            return;
+        }
+
+        // jos xpaa on tarpeeksi, mennään seuraavaan vaiheeseen request pipelinessa
+        // se voi olla seuraava middleware tai controllerin action
+        await next(context);
+
+
+    }
+}
+
+
+```
+
+3. Rekisteröidään oma middleware
+
+```cs
+
+// Program.cs
+
+// yläpuolella 
+// builder.Services.AddScoped<IAuthorizationHandler, XpAuthorizationHandler>();
+
+// tämä on uusi
+builder.Services.AddScoped<XpAuthorizationMiddleware>();
+
+// alapuolella on builder.Services.AddControllers();
+
+////////// koodia välissä //////////////////////////
+
+// tämä on uusi
+
+app.UseMiddleware<XpAuthorizationMiddleware>();
+
+
+
+// alapuolella app.UseHttpsRedirection();
+
+```
+
+:::tip Miksi Middleware pitää esitellä Scoped servicenä ja lisäksi vielä lisätä UseMiddleware-metodilla?
+
+UseMiddleware-metodi kiinnittää middlewaren request pipelineen, eli sitä ei tarvitse erikseen enää käyttää controllerissa.
+
+Koodi ei toimisi, jos emme lisäisi omaa middlewarea servicena AddScoped-metodilla. Syy siihen on implementoitu <i>IMiddleware</i>-interface.
+
+
+
+:::
+
+:::tip Noh, jos IMiddleware saa aikaan sen, että middleware pitää rekisteröidä Scoped-servicenä, miksi käytämme IMiddleware-interfacea?
+
+<strong>Scoped-servicen käytöllä varmistamme, että middlewaresta luodaan uusi instanssi jokaiselle requestille</strong>. Tällä tavalla vältymme siltä, ettei middleware elä pyyntöä pidempään, eikä täten esim. requestContext voi vuotaa vahingossa middlewaren kautta requestista toiseen. 
+
+Toinen syy Scoped-servicen käyttöön on, että käytämme userServiceä middlewaressa ja userService on Scoped-service. <strong>Varmistamme, että molemmat elävät yhtä kauan</strong>
+
+:::
+
+4. Poistetaan XpAuthorizationMiddleware käytöstö
+
+```cs
+
+// UsersController
+
+[HttpGet("account/rewards")]
+
+    //[Authorize(Policy = "Require1000Xp")]
+    //[XpAuthorization(10)]
+
+    // middlewarea ei eriksen käytetä täällä
+    // koska AddMiddleware kiinnittää sen jokaiseen reqeustiin
+    public ActionResult<string> GetRewards()
+    {
+        return Unauthorized();
+    }
+
+```
+
+Nyt meillä on middlewaren käytön jälkeen kaksi ongelmaa. Ensimmäinen on se, että middleware on tosiaankin käytössä jokaisessa requestissa, vaikka tarvitsemme sitä toistaiseksi vain yhdessä. Toinen ongelma on se, että attribuutille pystyi antamaan parametrina tarvittavan Xp:n määrän, mutta middlewaressa se on nyt kiinteänä lukuna.
+
+
+
 
 
 
