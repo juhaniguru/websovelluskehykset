@@ -2172,7 +2172,7 @@ Toinen syy Scoped-servicen käyttöön on, että käytämme userServiceä middle
 
 :::
 
-4. Poistetaan XpAuthorizationMiddleware käytöstä
+4. Poistetaan XpAuthorizationAttribute käytöstä
 
 ```cs
 
