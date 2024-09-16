@@ -2187,7 +2187,7 @@ Toinen syy Scoped-servicen käyttöön on, että käytämme userServiceä middle
     // koska AddMiddleware kiinnittää sen jokaiseen reqeustiin
     public ActionResult<string> GetRewards()
     {
-        return Unauthorized();
+        return Ok("");
     }
 
 ```
@@ -2195,9 +2195,129 @@ Toinen syy Scoped-servicen käyttöön on, että käytämme userServiceä middle
 Nyt meillä on middlewaren käytön jälkeen kaksi ongelmaa. Ensimmäinen on se, että middleware on tosiaankin käytössä jokaisessa requestissa, vaikka tarvitsemme sitä toistaiseksi vain yhdessä. Toinen ongelma on se, että attribuutille pystyi antamaan parametrina tarvittavan Xp:n määrän, mutta middlewaressa se on nyt kiinteänä lukuna.
 
 
+5. Tehdään uusi attribuutti, jonka perusteella middleware suoritetaan
+
+Lisää Attributes-kansioon <i>RequireXpAttribute</i>-luokka
+
+```cs
+
+using System;
+
+namespace API.Attributes;
+
+public class RequireXpAttribute(int requiredXp) : Attribute
+{
+    public int RequiredXp { get; } = requiredXp;
+}
+
+```
+
+Attribuutissa ei tehdä mitään autorisointeja eikä validointeja. Se on vain sitä varten, että voimme lukea RquiredXp:n arvon middlewaressa
 
 
+6. Päivitetään middlewaren koodi niin, että se käyttää uuden attribuutin RequiredXp-propertya sekä aiemminkin käytettyä <i>Authorize</i>-attribuuttia
 
+```cs
+
+using System;
+using System.Security.Claims;
+using API.Attributes;
+using API.Models;
+using API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace API.Middlewares;
+
+public class XpAuthorizationMiddleware(IUserService service) : IMiddleware
+{
+    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+    {
+        // endpoint on controllerin action, joka suoritetaan
+        var endpoint = context.GetEndpoint();
+        var unAuthorizedResponse = new { title = "Unauthorized" };
+        // jos endpoint löytyy
+        if (endpoint != null)
+        {
+            // haetaan RequireXpAttribute
+            var requireXpAttribute = endpoint.Metadata.GetMetadata<RequireXpAttribute>();
+            
+            // haetaan Authorize-attribute
+            var authorizeAttribute = endpoint.Metadata.GetMetadata<AuthorizeAttribute>();
+
+            // vain jos molempia on käytetty controllerin actionin yläpuolella
+            // mennään eteenpäin
+            if (requireXpAttribute != null && authorizeAttribute != null)
+            {
+
+                var id = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+                if (id == null)
+                {
+
+                    context.Response.StatusCode = 401; // Bad Request
+                    await new ObjectResult(unAuthorizedResponse).ExecuteResultAsync(new ActionContext { HttpContext = context });
+
+                    return;
+                }
+
+                int parsedId;
+
+                var success = int.TryParse(id.Value, out parsedId);
+                if (!success)
+                {
+                    context.Response.StatusCode = 401; // Bad Request
+                    await new ObjectResult(unAuthorizedResponse).ExecuteResultAsync(new ActionContext { HttpContext = context });
+                    return;
+                }
+
+                var user = await service.GetById(parsedId);
+                if (user == null)
+                {
+                    context.Response.StatusCode = 401; // Bad Request
+                    await new ObjectResult(unAuthorizedResponse).ExecuteResultAsync(new ActionContext { HttpContext = context });
+                    return;
+                }
+                // joa tänne asti mennään, käytetään requireXpAttributen RequireXp-propertya
+                // näin arvoa ei tarvitse laittaa tänne kiinteästi
+                if (user.Xp < requireXpAttribute.RequiredXp)
+                {
+                    var fordibResponse = new { title = "Forbidden" };
+                    context.Response.StatusCode = 403; // Bad Request
+                    await new ObjectResult(fordibResponse).ExecuteResultAsync(new ActionContext { HttpContext = context });
+                    return;
+                }
+            }
+        }
+        
+        // jos RequireXpAttributea ja AuthorizeAttributeja
+        // ei käytetä, 
+        // mennään suoraan request pipelinessä seuraavaan vaiheeseen.
+
+        // Middleware 'juoksee siis suoraan läpi', jos tiettyjä attribuutteja ei käytetä
+        // näin pystyt rajaamaan attribuuteilla sitä, milloin middleware suoritetaan
+        await next(context);
+
+
+    }
+}
+
+
+```
+
+7. Päivitetään UsersController
+
+```cs
+
+
+[HttpGet("account/rewards")]
+[Authorize]
+[RequireXp(100)]
+public ActionResult<string> GetRewards()
+{
+    return Ok("");
+}
+
+```
 
 
     
