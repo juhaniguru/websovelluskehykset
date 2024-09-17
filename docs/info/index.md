@@ -90,10 +90,10 @@ Jatka verkkokauppa-tehtävää jonka teet tehtävissä 6 ja 7. Voit valita itse 
     </tr>
     <tr>
       <td>Kirjautuminen</td>
-      <td>5+5</td>
+      <td>2+5</td>
       <td>POST::/api/v1/auth/login</td>
-      <td>Sisäänkirjautuminen käyttäjätunnuksella ja salasanalla <strong>Tästä tulee lisää materiaalia</strong></td>
-      <td> + 5 Jos käytät Asp .net Corea ja käytät Identitya</td>
+      <td>Sisäänkirjautuminen käyttäjätunnuksella ja salasanalla <strong>Lisäninfoa <a href="/aspdotnetcore/#autentikaatio">C#:lla</a> ja Pythonilla. Kirjautumisesta saa vain 2 pistettä oletuksena, koska ominaisuus on tehty / tehdään valmiiksi molemmilla kielillä </strong></td>
+      <td> + 5 Jos käytät Asp .net Corea ja käytät Identitya / Käytät FastApin OAuth-provideria</td>
     </tr>
     <tr>
       <td>Ostoskoriin tavaran lisääminen</td>

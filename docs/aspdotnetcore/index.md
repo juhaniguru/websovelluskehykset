@@ -2319,5 +2319,112 @@ public ActionResult<string> GetRewards()
 
 ```
 
+### Sisäänkirjautuneen käyttäjän tiedot
+
+
+Hyvin monessa web-sovelluksessa ei riitä pelkästään tarkistus, että käyttäjä on kirjautunut sisään, vaan useasti kirjautuneen käyttäjän tietoja tarvitaan esim. viiteavaimeksi.
+
+1. Luodaan uusi endpoint sisäänkirjautuneen käyttäjän tietoja varten
+
+```cs
+
+//UsersController
+
+[HttpGet("account")]
+[Authorize]
+// AccountRes-dtota meillä ei vielä ole
+public async Task<ActionResult<AccountRes>> GetAccount()
+{
+    
+    var id = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+    if (id == null)
+    {
+        return Unauthorized();
+    }
+
+    var success = int.TryParse(id.Value, out int parsedId);
+    if (!success)
+    {
+        return Unauthorized();
+    }
+
+    var user = await service.GetById(parsedId);
+    if (user == null)
+    {
+        return Unauthorized();
+    }
+
+    return new AccountRes
+    {
+        Id = user.Id,
+        UserName = user.UserName,
+        Role = user.Role
+    };
+
+
+
+
+}
+
+```
+
+Tässä koodissahan ei ole mitään uutta, olemme käyttäneet sitä aiemmin middlewaressa ja attribuutissa.
+
+2. Luodaan AccountRes-luokka 
+
+```cs
+
+using System;
+
+namespace API.DTOs;
+
+
+// peritään AddUserRes, koska se sisältää id:n ja usernamen
+// siihen tarvitaan lisäksi vain role
+public class AccountRes : AddUserRes
+{
+    public string Role { get; set; } = "user";
+
+}
+
+
+```
+
+:::tip Sanoit aiemmin, että...
+
+Järjestelmässä tiedon pitää kulkea sovelluksen kerrosten läpi ylhäältä alas, ei sivusuunnassa. Nyt kuitenkin käytät AddUserRes-luokkaa AccountRes:n basena, miksi?
+
+Kyllä, pitää paikkaansa. Viittaan <a href="/architectures/#title-tip">tähän</a>. Kyse on siitä, että ohjelman layerin (esim. repository layerin) luokasta pitäisi välttää kutsumasta toisen repository-luokan metodia. <strong>Siis niin, että samalla tasolla olevien layereiden välillä ei ole suoraa liikenettä, vaan liikenne tulee aina ylhäältä</strong>.
+
+Tässä ei kuitenkaan ole kyse siitä. DTOs-luokat ovat pelkkää tietoa ilman toiminnallisuuksia, eli metodeja. Tässä tapauksessa luokan periminen on aivan OK
+:::
+
+Sisäänkirjautuneen käyttäjän tietojen hakemisen voi tehdä yo. kuvatulla tavalla, jos sitä tietoa tarvitaan vain yhdessä endpointissa, mutta saman koodin toistaminen useassa endpointissa käy työlääksi
+
+Toistoa voi vähentää kahdella eri tavalla
+
+1. Tehdään ominaisuudesta oma metodi
+
+ja laitetaan se yläluokkaan. Kun kaikki Controller-luokat perivät saman yläluokan, voimme kutsua metodia tarvittaessa mistä tahansa Controllerin actionista.
+
+```cs
+
+// Esimerkki tähän
+
+```
+
+2. Luomalla ominaisuudesta oman middlewaren
+
+Luodaan sisäänkirjautuneen käyttäjän hakemisesta oma middleware, jota käytetään aina silloin, kun AuthorizeMiddleware on käytössä 
+
+```cs
+
+// tähän koodi
+
+```
+
+
+
+
 
     

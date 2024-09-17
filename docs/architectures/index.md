@@ -529,7 +529,7 @@ Ei välttämättä mihinkään. Uusia abstraktiolayereita ei kannata lisätä va
 
 :::
 
-<i>Kuvitellaan sellainen käyttötapaus, jossa käyttäjän sisäänkirjautumisen jälkeen pitää tehdä jokaisesta kirjautumisesta lokimerkintä tietokantaan.</i> Koodi tällaisessa käyttötapauksessa voisi näyttää ilman sevice patternia tältä:
+<i>Kuvitellaan sellainen käyttötapaus, jossa käyttäjän sisäänkirjautumisen jälkeen pitää tehdä jokaisesta kirjautumisesta lokimerkintä tietokantaan.</i> Koodi tällaisessa käyttötapauksessa voisi näyttää ilman service patternia tältä:
 
 ```py
 
@@ -568,8 +568,9 @@ class LogRepository:
     
     def add(self, username, _timestamp):
         with self.con.cursor() as cur:
-            cur.execute('INSERT INTO log_table(username, ts) VALUES(%s, %s)', (username, _timestamp))
-            cur.execute()
+            cur.execute('INSERT INTO log_table(username, ts) VALUES(%s, %s)', 
+            (username, _timestamp))
+            cur.commit()
 
 ```
 
@@ -577,7 +578,7 @@ class LogRepository:
 
 Yo. kuvassa on Controller-luokka / tiedosto, jota ei koodiesimerkissä ole. Se on jätetty esimerkistä pois selkeyden vuoksi. Joka tapauksessa repositoriot toimivat kuvan tavalla.
 
-:::tip Huomaatko, mikä ongelma tässä on?
+:::tip <p id="title-tip"><strong>Huomaatko, mikä ongelma tässä on?</strong></p>
 
 Kun request valuu alaspäin controllerilta AuthRepositorylle, homma menee vielä oikein, mutta samalla tasolla olevien komponenttien (tässä tapauksessa repositoryt Auth ja Log) ei pitäisi keskustella keskenään. <strong>Datan pitäisi valua aina arkkitehtuurissa alas ja vastauksen nousta takaisin ylös. Ei niin, että ensin alas ja sitten sivuttain</strong>
 
@@ -668,7 +669,7 @@ Factory patternia käytän monesti riippuvuuksien luontiin, sillä se keskittä�
 <strong>interface injection tarkoittaa vain sitä, että constructor injectionissa riippuvuuden tietotyyppinä käytetään luokan tietotyypin sijasta interfacea, mikä puolestaan luo modulaarisempaa koodia. Kyse on siis constructor injectionin variaatiosta</strong>
 
 Totta emme ole aiemmin käyneet läpi interface injectionia, eikä sitä ole edes mainittu.
-Koska Pythonissa ei ole monesta muusta kielestä tuttua interfacea, tämä on jätetty tarkoituksella pois. Käydään tämä dependency injectionin tyyppi läpi C#:lla. Esimerkin löydät <a href="#">täältä</a>
+Koska Pythonissa ei ole monesta muusta kielestä tuttua interfacea, tämä on jätetty tarkoituksella pois. Käydään tämä dependency injectionin tyyppi läpi C#:lla. Esimerkin löydät <a href="/whatis/#interface">täältä</a>
 
 :::
 
