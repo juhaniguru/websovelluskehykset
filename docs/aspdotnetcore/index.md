@@ -2407,19 +2407,126 @@ Toistoa voi vähentää kahdella eri tavalla
 
 ja laitetaan se yläluokkaan. Kun kaikki Controller-luokat perivät saman yläluokan, voimme kutsua metodia tarvittaessa mistä tahansa Controllerin actionista.
 
-```cs
 
-// Esimerkki tähän
-
-```
 
 #### Luomalla ominaisuudesta oman middlewaren
 
-Luodaan sisäänkirjautuneen käyttäjän hakemisesta oma middleware, jota käytetään aina silloin, kun AuthorizeMiddleware on käytössä 
+1. Luodaan sisäänkirjautuneen käyttäjän hakemisesta oma middleware, jota käytetään aina silloin, kun AuthorizeMiddleware on käytössä 
 
 ```cs
 
-// tähän koodi
+using System;
+using System.Security.Claims;
+using API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace API.Middlewares;
+
+public class RequireLoggedInUserMiddleware(IUserService service) : IMiddleware
+{
+    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+    {
+        var endpoint = context.GetEndpoint();
+        // endpoint voi olla null, jos kirjoitat urlin väärin
+        if (endpoint != null)
+        {
+            // haetaan käyttäjä vain , jos authorize-attribute-on käytössä
+            var authorizedAttr = endpoint.Metadata.GetMetadata<AuthorizeAttribute>();
+            if (authorizedAttr != null)
+            {
+                var unAuthorizedResponse = new { title = "Unauthorized" };
+                var id = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+                if (id == null)
+                {
+                    context.Response.StatusCode = 401; // Bad Request
+                    await new ObjectResult(unAuthorizedResponse).ExecuteResultAsync(new ActionContext { HttpContext = context });
+                    return;
+                }
+
+                var success = int.TryParse(id.Value, out int parsedId);
+                if (!success)
+                {
+                    context.Response.StatusCode = 401; // Bad Request
+                    await new ObjectResult(unAuthorizedResponse).ExecuteResultAsync(new ActionContext { HttpContext = context });
+                    return;
+                }
+
+                var user = await service.GetById(parsedId);
+                if (user == null)
+                {
+                    context.Response.StatusCode = 401; // Bad Request
+                    await new ObjectResult(unAuthorizedResponse).ExecuteResultAsync(new ActionContext { HttpContext = context });
+                    return;
+                }
+
+                // laitetaan sisäänkirjautunut käyttäjä osaksi httpcontextia
+                context.Items["loggedInUser"] = user;
+            }
+        }
+        // mennään eteenpäin
+        await next(context);
+    }
+}
+
+
+```
+
+2. Muista rekisteröidä middleware scoped-servicenä ja lisäksi lisätä se pipelineen
+
+```cs
+
+// Program.cs
+
+// ylåpulella rekisteröidään XpAuthorizationMiddleware
+
+builder.Services.AddScoped<RequireLoggedInUserMiddleware>();
+
+// viimeisenä
+app.UseMiddleware<RequireLoggedInUserMiddleware>();
+
+```
+
+3. Päivitetään UsersControllerin koodi
+
+```cs
+
+[HttpGet("account")]
+// Authorize-attribuutin käyttö on pakollista
+// muuten middlewaren koodia ei suoriteta
+[Authorize]
+public async Task<ActionResult<AccountRes>> GetAccount()
+{
+    // haetaan HttpContext.Itemsista samalla avaimella käyttäjä,
+    // joka sinne middlewaressa on tallennettu
+    // is not AppUser loggedInUer on ns. pattern matching
+    
+    // sama kuin
+    // var loggedInUser = HttpContext.Items["loggedInUser"] as AppUser;
+    // if(loggdInUser == null) {
+        // return Unauthorized();
+    //}
+    if (HttpContext.Items["loggedInUser"] is not AppUser loggedInUser)
+    {
+        return Unauthorized();
+    }
+    // mikä Task.FromResult(Ok....)
+    // koska metodissa ei ole mitään asynkronista enää
+    // voisimme tehdä siitä synkronisen
+    // jos haluamme pitää sen asyncina, emme pysty awaitaamaan Ok():ta
+    // koska Ok ei ole awaitable, vaan sen on synkroninen
+
+    // nyt meillä on async metodin edessa, jossa ei ole yhtään awaitia sisällä
+    // jotta pystymme käyttämään awaitia, pistämme Ok();n kutsun
+    // Task.FromResultin sisään
+    return await Task.FromResult(Ok(new AccountRes
+    {
+        Id = loggedInUser.Id,
+        UserName = loggedInUser.UserName,
+        Role = loggedInUser.Role
+
+
+    }));
 
 ```
 
