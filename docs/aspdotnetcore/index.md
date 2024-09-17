@@ -2394,7 +2394,7 @@ public class AccountRes : AddUserRes
 
 Järjestelmässä tiedon pitää kulkea sovelluksen kerrosten läpi ylhäältä alas, ei sivusuunnassa. Nyt kuitenkin käytät AddUserRes-luokkaa AccountRes:n basena, miksi?
 
-Kyllä, pitää paikkaansa. Viittaan <a href="/architectures/#title-tip">tähän</a>. Kyse on siitä, että ohjelman layerin (esim. repository layerin) luokasta pitäisi välttää kutsumasta toisen repository-luokan metodia. <strong>Siis niin, että samalla tasolla olevien layereiden välillä ei ole suoraa liikenettä, vaan liikenne tulee aina ylhäältä</strong>.
+Kyllä, pitää paikkaansa. Viittaan <a href="/architectures/#title-tip">tähän</a>. Kyse on siitä, että ohjelman layerin (esim. repository layerin) luokasta pitäisi välttää kutsumasta toisen repository-luokan metodia. <strong>Siis niin, että samalla tasolla olevien layereiden välillä ei ole suoraa liikennettä, vaan liikenne tulee aina ylhäältä</strong>.
 
 Tässä ei kuitenkaan ole kyse siitä. DTOs-luokat ovat pelkkää tietoa ilman toiminnallisuuksia, eli metodeja. Tässä tapauksessa luokan periminen on aivan OK
 :::
@@ -2403,7 +2403,7 @@ Sisäänkirjautuneen käyttäjän tietojen hakemisen voi tehdä yo. kuvatulla ta
 
 Toistoa voi vähentää kahdella eri tavalla
 
-1. Tehdään ominaisuudesta oma metodi
+#### Tehdään ominaisuudesta oma metodi
 
 ja laitetaan se yläluokkaan. Kun kaikki Controller-luokat perivät saman yläluokan, voimme kutsua metodia tarvittaessa mistä tahansa Controllerin actionista.
 
@@ -2413,7 +2413,7 @@ ja laitetaan se yläluokkaan. Kun kaikki Controller-luokat perivät saman ylälu
 
 ```
 
-2. Luomalla ominaisuudesta oman middlewaren
+#### Luomalla ominaisuudesta oman middlewaren
 
 Luodaan sisäänkirjautuneen käyttäjän hakemisesta oma middleware, jota käytetään aina silloin, kun AuthorizeMiddleware on käytössä 
 
