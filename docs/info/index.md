@@ -279,12 +279,33 @@ Opintojakson pisteet määräytyvät projektin ja yskittäisten tehtävien omina
 
   
 
-  :::danger Muista palauttaa tehtäviä
+:::danger Muista palauttaa tehtäviä
 
-  Opettajilla on nykyään lupa poistaa opintojakson loputtua opintojaksolta opiskelijat, jotka eivät ole tehneet yhtään palautusta
+Opettajilla on nykyään lupa poistaa opintojakson loputtua opintojaksolta opiskelijat, jotka eivät ole tehneet yhtään palautusta
 
-  <strong>Jos siis et tee yhtään palautusta opintojakson loppuun menneessä, sinut poistetaan toteutukselta kokonaan. Tällaisessa tapauksessa arvosanan korotus ei onnistu, vaan opintojakso pitää käydä alusta asti uudelleen seuraavan kerran, kun se järjestetään</strong>
+<strong>Jos siis et tee yhtään palautusta opintojakson loppuun menneessä, sinut poistetaan toteutukselta kokonaan. Tällaisessa tapauksessa arvosanan korotus ei onnistu, vaan opintojakso pitää käydä alusta asti uudelleen seuraavan kerran, kun se järjestetään</strong>
 
+:::
+
+:::info
+
+<strong>Lyhyesti: Kaikkea saa käyttää lähteenä, kunhan ne merkkaa, eikä käytä tekoälyn antamia vastauksia suoraan, vaan pohtii mitä koodi tekee ja muokkaa vastauksen projektiin sopivaksi</strong>
+ 
+- <strong>Udemy ja Youtube ovat molemmat OK</strong>, joskus käyttänyt Udemya itsekin, Youtubea harvemmin, koska siellä materiaali ei ole niin laadukasta, mutta sitä toki saa käyttää lähteenä
+- <strong>Tekoälyn käyttäminen on OK</strong> myös lähteenä, koska se monesti kokoaa sinulle järkeväksi kirjoitukseksi sen, mikä muuten olisi murusina ympäri Internetiä useassa lähteessä.
+ 
+- Jos käytät Youtubea, tai Udemya, niin laita koodin kommentteihin, esim. 
+  * <i>// tämä idea on täältä [urli tähän]. (jos mahdollista, niin merkkaa myös tarkempi kohta videosta. Jos kyseessä on usean tunnin Udemy-kurssi tai  pidempi Youtube-tutoriaali, niin minun ei tarvitse katsoa koko kurssia läpi, jotta löydän etsimäni</i>
+    * <strong>Jos lähteesi ovat maksumuurin takana, pyri löytämään vastaava tieto myös muualta ja merkkaa sekin lähteeksi</strong>
+- Jos käytät tekoälyä, merkkaa näin: 
+  * Käytin ChatGpt 
+    * kysymys1: <i>”Could you please tell if it’s possible to inject the logged in user into the controller action in asp .net core”</i>, Tähän vastaukseen kysyt jatkokysymyksen
+    * kysymys2: <i>”Could you please clarify the differences between an attribute and a middleware”</i>. 
+    * Tämän vastaukseen voisit esittää jatkokysymyksen <i>“Ok then, is it customary to use middleware in this type of situation instead of attribute”</i>
+    
+  <strong>Jos sitten saat toimivan vastauksen tämän keskustelun jälkeen tekoälyltä muokkaa sitä niin, että se sopii sinun tapaukseesi</strong>
+
+  
   :::
 
 
