@@ -2530,6 +2530,184 @@ public async Task<ActionResult<AccountRes>> GetAccount()
 
 ```
 
+## Entity Framework, kyselyt ja relaatiot
+
+Entity Framework käyttää LinQ:ä SQL-kyselyjen luomiseen.
+
+:::info Lue lisää täältä
+
+https://learn.microsoft.com/en-us/dotnet/csharp/linq/
+
+:::
+
+Kun käytät projektissa Entity Frameworkia ja siten linQ:iä, sinun ei tarvitse itse kirjoittaa SQL-kyselyjä. Entity Framework käyttää sisäisesti Repository Patternia, joten sinun ei tarvitse tehdä erikseen myöskään repository-layeria projektiisi, jos käyttä sitä. 
+
+### One-to-many-relaatio
+
+1. Lisätään Models-kansioon <i>Ticket-luokka</i>. 
+
+```cs
+
+using System;
+using System.Text.Json.Serialization;
+
+namespace API.Models;
+
+public class Ticket
+{
+    public int Id { get; set; }
+    public required string Title { get; set; }
+    public string? Description { get; set; } = null;
+
+    // UserId-propertysta tulee Tickets-tauluun viiteavain
+    public required int UserId { get; set; }
+
+    // AppUser User on ns. navigation property
+    // siitä ei tule oikeasti saraketta tietokantatauluun
+    // vaan se on sitä varten, 
+    // että jokaisesta tiketista saadaan siihen kiinnitetyn käyttäjän tiedot
+    public virtual AppUser? User { get; set; }
+}
+
+
+```
+
+:::info Mikä virtual?
+
+C#:ssa virtual metodin / propertyn voi ylikirjoittaa, tämä on polymorfismia käytännössä!
+Kun teemme navigation propertysta virtualin, EF Core osaa automaattisesti hakea modeliin kuuluvan relatiivisen datan tietokannasta.
+
+:::
+
+2. Muokataan <i>AppUser</i>-luokka
+
+```cs
+
+using System;
+using System.Text.Json.Serialization;
+
+namespace API.Models;
+
+public class AppUser
+{
+    // Muista, käyttää Id-propertysta juuri tällaista nimeä
+    // asennamme EntityFrameWorkCore-riippvuuden Nugetista
+    // EF Core tekee autom. Id-attribuutista tietokannan
+    // taulun perusavaimen
+    public int Id { get; set; }
+    public required string UserName { get; set; }
+    public required string Role { get; set; }
+
+    public required byte[] PasswordSalt { get; set; }
+
+    public required byte[] HashedPassword { get; set; }
+
+    public int Xp { get; set; }
+
+    // lisätään User-modeliin tämä property
+    // tämä puolestaan on navigation property
+    // jolla saadaan käyttäjän omistamat ticketit
+    public virtual ICollection<Ticket> Tickets { get; set; } = [];
+}
+
+
+```
+
+
+:::info Mikä ICollection?
+
+Voisimme käyttää tässä esim. List-tietotyyppiä, mutta ICollection on rajapinta, jota useat konkreettiset kokoelmatietotyypit käyttävät. 
+ 
+:::
+
+EF Coressa voit hakea relatiiivisen datan useamalla eri tavalla.
+
+#### Lazy loading
+
+Lazy loading tarkoitaa sitä, että relatiivista dataa ei haeta automaattisesti yhdellä kyselyllä, vaan ainoastaan silloin, kun sitä tarvitaan.
+
+Lazy loading on yleensä kätevä, koska se pienentää ensimmäisen kyselyn datamäärää ja voi näin nopeuttaa sitä, mutta toisaalta, koska relatiivinen data haetaan ainoastaan tarvittaessa, se lisää yksittäisten pienten kyselyjen määrää.
+
+EF Coressa Lazy loading ei ole enää oletuksena päällä, koska se lisätä kyselyjen määrää huomattavasti. Jos haluat käyttää lazy loadingia, pitää se laittaa päälle
+
+3. Asennettaan Microsoft.EntityFrameworkCore.Proxies Nugetilla
+
+4. Tämän jälkeet voit laittaa lazy loadingin päälle
+
+```cs
+// Program.cs
+
+builder.Services.AddDbContext<DataContext>(opt =>
+{
+    opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")).
+    // tämä on uusi
+    UseLazyLoadingProxies();
+});
+
+```
+
+5. Nyt muokataan GetAccount-metodia UsersControllerissa
+
+```cs
+
+[Authorize]
+        public async Task<ActionResult<AccountRes>> GetAccount()
+        {
+            if (HttpContext.Items["loggedInUser"] is not AppUser loggedInUser)
+            {
+                return Forbid();
+            }
+
+            return await Task.FromResult(Ok(new AccountRes
+            {
+                Id = loggedInUser.Id,
+                UserName = loggedInUser.UserName,
+                Role = loggedInUser.Role,
+                // kun käytät Tickets-propertya
+                // EF Core lataa käyttäjälle kuuluvat 
+                // tiketit automaattisesti erillisellä kyselyllä
+                Tickets = loggedInUser.Tickets.ToList()
+
+
+            }));
+
+
+
+        }
+
+```
+
+#### Eager loading
+
+
+Eager loading tarkoittaa sitä, että relatiivinen data ladataan yhdellä kertaa, samalla kyselyllä käyttäen JOINia
+
+```cs
+
+// Include lataa relatiivisen datan heti yhdellä kyselyllä.
+ var users = context.Tickets.Include(t => t.User).ToListAsync();
+```
+
+#### Explicit loading
+
+Explicit loading sa aikaan saman kuin lazy loadingkin, mutta lazy loading tekee sen automaattisesti, kun käytät navigation propertya. Explicit loading pitää tehdä manuaalisesti. Katsotaan esimerkki
+
+```cs
+
+var user = await contezt.Users.FirstOrFail(u => u.Id == id);
+
+// lazy loading
+
+var tickets = user.Tickets;
+
+// explicit loading
+
+var tickets = context.Entry(user).Collection(u => u.Tickets).Load();
+
+```
+
+
+
 
 
 
