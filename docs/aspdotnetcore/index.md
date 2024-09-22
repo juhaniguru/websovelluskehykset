@@ -2620,6 +2620,37 @@ Voisimme käyttää tässä esim. List-tietotyyppiä, mutta ICollection on rajap
  
 :::
 
+3. Lisätään uusi DBConext
+
+```cs
+
+// DataContext.cs
+
+using System;
+using API.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace API.Data;
+
+public class DataContext(DbContextOptions options) : DbContext(options)
+{
+    // Propertyn nimestä tulee
+    // tietokantataulun nimi
+    // Tässä siis Users
+
+    // modeleista tehdään dbsetit
+    public DbSet<AppUser> Users { get; set; }
+    // tämä on uusi
+    public DbSet<Ticket> Tickets { get; set; }
+}
+
+
+```
+
+4. Luo uusi migraatioskripiti ja päivitä tietokanta
+
+Ohjeet tähän löytyvät aiemmin sivulta
+
 EF Coressa voit hakea relatiiivisen datan useamalla eri tavalla.
 
 #### Lazy loading
@@ -2630,9 +2661,9 @@ Lazy loading on yleensä kätevä, koska se pienentää ensimmäisen kyselyn dat
 
 EF Coressa Lazy loading ei ole enää oletuksena päällä, koska se lisätä kyselyjen määrää huomattavasti. Jos haluat käyttää lazy loadingia, pitää se laittaa päälle
 
-3. Asennettaan Microsoft.EntityFrameworkCore.Proxies Nugetilla
+5. Asennettaan Microsoft.EntityFrameworkCore.Proxies Nugetilla
 
-4. Tämän jälkeet voit laittaa lazy loadingin päälle
+6. Tämän jälkeet voit laittaa lazy loadingin päälle
 
 ```cs
 // Program.cs
@@ -2646,7 +2677,7 @@ builder.Services.AddDbContext<DataContext>(opt =>
 
 ```
 
-5. Nyt muokataan GetAccount-metodia UsersControllerissa
+7. Nyt muokataan GetAccount-metodia UsersControllerissa
 
 ```cs
 
