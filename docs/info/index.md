@@ -69,7 +69,7 @@ Jatka verkkokauppa-tehtävää jonka teet tehtävissä 6 ja 7. Voit valita itse 
       <td>/api/v1/products</td>
       <td>Verkkokaupan kaikkien tuotteiden listaus kategoriasta riippumatta</td>
       <td>+5 pistettä, jos sivutus otetaan huomioon <i>/api/v1/products?page=2.</i>
-      <strong> Huom. tehtävä on täysin sama kuin tehtävissä 5 & 6. Jos teet ne tehtävät ja päätät jatkaa projektia, et saa molemmista pisteitä</strong>
+      <strong> Huom. tehtävä on täysin sama kuin tehtävissä 6 & 7. Jos teet ne tehtävät ja päätät jatkaa projektia, et saa molemmista pisteitä</strong>
       </td>
     </tr>
     <tr>
@@ -78,7 +78,7 @@ Jatka verkkokauppa-tehtävää jonka teet tehtävissä 6 ja 7. Voit valita itse 
       <td>/api/v1/categories/{id}/products</td>
       <td>Verkkokaupan tuotteiden listaus kategorioittain</td>
       <td>+5 pistettä, jos sivutus otetaan huomioon <i>/api/v1/categories/{id}/products?page=2</i>
-      <strong> Huom. tehtävä on täysin sama kuin tehtävissä 5 & 6. Jos teet ne tehtävät ja päätät jatkaa projektia, et saa molemmista pisteitä</strong>
+      <strong> Huom. tehtävä on täysin sama kuin tehtävissä 6 & 7. Jos teet ne tehtävät ja päätät jatkaa projektia, et saa molemmista pisteitä</strong>
       </td>
     </tr>
     <tr>
@@ -86,7 +86,7 @@ Jatka verkkokauppa-tehtävää jonka teet tehtävissä 6 ja 7. Voit valita itse 
       <td>5</td>
       <td>/api/v1/categories</td>
       <td>Verkkokaupan kateogoroiden listaus</td>
-      <td><strong> Huom. tehtävä on täysin sama kuin tehtävissä 5 & 6. Jos teet ne tehtävät ja päätät jatkaa projektia, et saa molemmista pisteitä</strong></td>
+      <td><strong> Huom. tehtävä on täysin sama kuin tehtävissä 6 & 7. Jos teet ne tehtävät ja päätät jatkaa projektia, et saa molemmista pisteitä</strong></td>
     </tr>
     <tr>
       <td>Kirjautuminen</td>
@@ -126,7 +126,7 @@ Jatka verkkokauppa-tehtävää jonka teet tehtävissä 6 ja 7. Voit valita itse 
     <tr>
       <td>Tilausten vahvistaminen</td>
       <td>10</td>
-      <td>POST::/api/v1/orders/confirm</td>
+      <td>POST::/api/v1/orders/{order_id}/confirm</td>
       <td>Ainoastaan sisäänkirjautuneelle moderator-roolin käyttäjälle</td>
       <td>Tilaukset pysyvät tilausten tekemisen jälkeen avoimina niin kauan, että moderator hyväksyy ne. Hyväksymisen jälkeen käyttäjä ei voi enää poistaa tilaustaan</td>
     </tr>
