@@ -343,9 +343,285 @@ Tehdään yhdistyskoodi, opetellaan Dependency <a href="#dependency-injection">I
 
 7. Lisää koodi models.pyhyn
 
-```
+```py
+
+# yläpuolella on Base = declarative_base()
+
+# check_same_thread?
+# sqlitessä tietokantayhteys on oletuksena sen luoneen threadin käytössä kerrallaan
+# fastapissa uvicorn voi vastaanottaa useita yhtäaikaisia requesteja
+# kun näiden requestien handlereissa otetaan yhtä aikaa yhteys tietokntaan,
+# pitää check_same_thread olla pois päältä
+# TÄMÄN TARVII VAIN SQLITESSÄ, EI MUISSA RELAATIOKANNOISSA
+engine = create_engine('sqlite:///tickets.db', connect_args={"check_same_thread": False})
+# sessionmaker on factory patternia käytännössä
+dbContext = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 ```
+
+```py
+
+# models.py
+# tiedoston viimeiseksi
+
+def get_db_connection():
+    db_conn = dbContext()
+    try:
+        yield db_conn
+    finally:
+        db_conn.close()
+
+```
+
+## Luodaan ensimmäinen users_controller
+
+8. Luo users_controller.py-tiedosto controllers-pakettiin
+
+ja lisää sinne tämä koodi
+
+```py
+
+# users_controller
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+import models
+
+router = APIRouter(prefix='/api/users', tags=['users'])
+
+
+@router.get('/')
+def get_all_users(db_conn: Session = Depends(models.get_db_connection)):
+    users = db_conn.query(models.Users).all()
+    return users
+
+```
+
+## Lisätään router main.pyhyn
+
+9. Lisää koodi main.pyhyn
+
+```py
+
+# main.py
+
+from fastapi import FastAPI
+
+from controllers import users_controller
+
+app = FastAPI()
+
+app.include_router(users_controller.router)
+
+```
+
+## Testataan projekti
+
+
+
+10. Kirjoita terminaaliin 
+
+```sh
+
+uvicorn main:app --reload
+
+```
+
+11. Mene selaimella osoitteeseen localhost:8000/docs
+
+:::info porttinumero
+
+voi olla eri kuin minulla, jos vaihdat sen itse tai portti 8000 on jo varattu
+
+:::
+
+Jos projekti toimii, sivulla pitäisi näkyä route
+
+![fastapi](./images/4.png)
+
+
+:::tip Riittääkö tämä?
+
+Nyt koodi kyllä toimii, mutta 
+
+- <i>dokumentaatiossa ei näy routehandlerin responsen mallia</i>: <strong>Lisätään routehandlerille paluuarvo</strong>
+- <i>db: Session = Depends(get_db_connection) joudutaan toistamaan kaikissa routehandlereissa joissa tietokantaa tarvitaan</i>: <strong>Tehdään oma typealias tietokantayhteydelle ja luodaan siitä instanssi factory patternia käyttäen</strong>
+- <i>tietokantakyselyt ovat suoraan controllerin routehandlerissa</i>: <strong>Käytetään service patternia; lisätään service-layer, jossa käytämme sqlalchemya. Service-layeria käytetään puolestaan controllerista</strong>
+
+:::
+
+## Lisätään routehandlerille paluuarvo
+
+12. Luo <i>dtos</i>-package
+
+13. Lisää dtos-pakettiin tiedosto: <i>users</i> ja sinne <i>UserRes</i>-luokka
+
+```py
+
+from pydantic import BaseModel
+
+
+class UserRes(BaseModel):
+    id: int
+    username: str
+    role: str
+
+
+```
+
+![fastapi](./images/5.png)
+
+
+14. Muokataan routehandleria
+
+```py
+
+@router.get('/')
+# kun routehandlerille antaa paluuarvon, dokumentaatioon saa paluuavon näkyviin
+def get_all_users(db_conn: Session = Depends(models.get_db_connection)) -> List[UserRes]:
+    users = db_conn.query(models.Users).all()
+    return users
+
+```
+
+Koska Python on dynaamisesti tyypitetty kieli, koodi toimii vaikka reoutehandler palauttaakin listan Users-modelluokan objekteja, eikä UserRes-luokan objekteja. 
+
+Jos haluat saat varoituksen pois muokkaamalla koodia edelleen
+
+```py
+
+@router.get('/')
+# kun routehandlerille antaa paluuarvon, dokumentaatioon saa paluuavon näkyviin
+def get_all_users(db_conn: Session = Depends(models.get_db_connection)) -> List[UserRes]:
+    users = db_conn.query(models.Users).all()
+    user_res = []
+    for u in users:
+        user_res.append(UserRes(id=u.Id, username=u.UserName, role=u.Role))
+    return user_res
+
+```
+
+Korjataan koodia edelleen
+
+15. Lisää <i>middlewares-kansio</i> ja sinne <i>user_res_handler.py</i>-tiedosto
+
+```py
+
+# user_res_handler.py
+
+from dtos.users import UserRes
+
+# koodi on nyt siirretty pois controllerista
+class UserResListHandler:
+    def send(self, user_list):
+        user_res_list = []
+        for user in user_list:
+            user_res_list.append(UserRes(id=user.id, username=user.username, role=user.role))
+        return user_res_list
+
+# factory pattern
+def  init_user_list_response_handler():
+    return UserResListHandler()
+
+
+```
+
+16. Käytetään responsehandleria users_controllerissa
+
+```py
+
+@router.get('/')
+def get_all_users(db_conn: Session = Depends(models.get_db_connection),
+                  res_handler: UserResListHandler = Depends(init_user_list_response_handler)) -> List[UserRes]:
+    users = db_conn.query(models.Users).all()
+    return res_handler.send(users)
+
+```
+
+Nyt meillä on jo 2. eri riipuvuutta, jotka kulkevat mukana useammassa routehandlerissa. 
+
+## Tehdään omat typealiakset
+
+17. Muutetaan db_connection
+
+```py
+
+# models.py
+
+# DbConn on typealis, jota voimme käyttää
+# tietotyyppinä. Erona on se, että kun DbConn tietotyyppinen muuttuja
+# luodaan, Depends-funktiolle parametrinä annettu funktio suoritetaan
+DbConn = Annotated[Session, Depends(get_db_connection)]
+
+```
+
+18. Muutetaan routehandlerin koodi
+
+Otetaan nyt uusi typealias käyttöön routehandlerissa
+
+```py
+
+@router.get('/')
+# kun routehandlerille antaa paluuarvon, dokumentaatioon saa paluuavon näkyviin
+def get_all_users(db_conn: models.DbConn,
+                  res_handler: UserResListHandler = Depends(init_user_list_response_handler)) -> List[UserRes]:
+    users = db_conn.query(models.Users).all()
+    return res_handler.send(users)
+
+
+```
+
+Nyt koodin toiminta ei muuttunut yhtään, mutta sama koodi toistuu paljon vähemmän typeliaksen vuoksi.
+
+19. Tehdään sama response_handlerille
+
+```py
+
+from typing import Annotated
+
+from fastapi.params import Depends
+
+from dtos.users import UserRes
+
+
+class UserResListHandler:
+    def send(self, user_list):
+        user_res_list = []
+        for user in user_list:
+            user_res_list.append(UserRes(id=user.id, username=user.username, role=user.role))
+        return user_res_list
+
+# factory pattern
+def  init_user_list_response_handler():
+    return UserResListHandler()
+
+# tämä on uutta
+UserResListResponseHandler = Annotated[UserResListHandler, Depends(init_user_list_response_handler)]
+
+
+
+
+```
+
+Muutetaan nyt routehandlerin koodi niin, että käytämme responsehandlerin typealiasta
+
+```py
+
+@router.get('/')
+# kun routehandlerille antaa paluuarvon, dokumentaatioon saa paluuavon näkyviin
+def get_all_users(db_conn: models.DbConn,
+                  res_handler: UserResListResponseHandler) -> List[UserRes]:
+    users = db_conn.query(models.Users).all()
+    return res_handler.send(users)
+
+
+```
+
+## Käytetään service patternia
+
+tähän tunkkia service patternista
+
 ### Dependency Injection
 
 FastAPIssa on on käytössä Depends-funktio. Depends-funktiolle voit antaa minkä tahansa kutsuttavan (callablen) objektin, kuten funktion, parametrina. 
