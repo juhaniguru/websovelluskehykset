@@ -47,7 +47,7 @@ class Athlete:
 
 # yläluokka laitetaan Pythonissa luokan perään sulkuihin
 class Runner(Athlete):
-    def __init__(first_name, last_name):
+    def __init__(self, first_name, last_name):
         # kutsutaan tässä Athlete-superluokan / yliluokan __init__-metodia
         super(Runner, self).__init__(first_name, last_name)
     
@@ -61,7 +61,7 @@ class Runner(Athlete):
 class Cyclist(Athlete):
     def __init__(first_name, last_name):
         # kutsutaan tässä Athlete-superluokan / yliluokan __init__-metodia
-        super(Runner, self).__init__(first_name, last_name)
+        super(Cyclist, self).__init__(first_name, last_name)
     
     # samoin täällä. Koska Cyclist perii Athlete-luokan,
     # voimme käyttää greeting-metodia kuin se olisi Cyclist-luokkaan tehty
@@ -84,7 +84,7 @@ Polymorfismi eli monimuotoisuus kulkee perinnän kanssa käsi kädessä. Yo. kuv
 class Shape:
     # koska Shape on abstrakti (siis mikä tahansa muoto)
     # emme pysty laskemaan sille pinta-alaa suoraan täällä
-    def area():
+    def area(self):
         raise Exception("area method not implemented")
 
 # kuutio on mluoto, koska se perii Shape-luokan
