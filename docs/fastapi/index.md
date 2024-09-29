@@ -327,7 +327,7 @@ Nyt kun olet asentanut sqlacodegen-v2:n, aja komento
 
 ```sh
 
-sqlacodegen_v2 sqlite:///tickets.db --o models.py
+sqlacodegen_v2 sqlite:///tickets.db --outfile models.py
 
 ```
 
@@ -504,7 +504,7 @@ def get_all_users(db_conn: Session = Depends(models.get_db_connection)) -> List[
 
 Korjataan koodia edelleen
 
-15. Lisää <i>middlewares-kansio</i> ja sinne <i>user_res_handler.py</i>-tiedosto
+15. Lisää <i>response_handlers-kansio</i> ja sinne <i>user_res_handler.py</i>-tiedosto
 
 ```py
 
@@ -517,7 +517,7 @@ class UserResListHandler:
     def send(self, user_list):
         user_res_list = []
         for user in user_list:
-            user_res_list.append(UserRes(id=user.id, username=user.username, role=user.role))
+            user_res_list.append(UserRes(id=user.Id, username=user.UserName, role=user.Role))
         return user_res_list
 
 # factory pattern
@@ -555,6 +555,33 @@ Nyt meillä on jo 2. eri riipuvuutta, jotka kulkevat mukana useammassa routehand
 DbConn = Annotated[Session, Depends(get_db_connection)]
 
 ```
+
+:::tip Mikä Annotated?
+
+Annotated on Pythonin, ei FastAPIn ominaisuus. Sen avulla voi lisätä metadataa tietotyyppeihin.
+
+:::
+
+Katsotaan aiempaa koodia uudelleen
+
+```py
+# DbConn on tietotyyppi, joka on pohjimmiltaan
+# SQLAlchemyn Session-tyyppiä. Metadatana käytämme 
+# FastAPIn dependency injectionia
+DbConn = Annotated[Session, Depends(get_db_connec
+
+```
+
+Metadata voi olla paljon muutakin kuin FastAPIn funktio
+
+```py
+
+ConfigString = Annotated[str, 'Use ConfigString type to specify configuration']
+
+```
+
+Yo. esimerkissä ConfigString on typealias, joka on str-tyyppiä ja siinä on metadatana kiinnitetty ohje siitä, mihin kyseistä tyyppiä pitäisi käyttää. 
+
 
 18. Muutetaan routehandlerin koodi
 
@@ -620,7 +647,262 @@ def get_all_users(db_conn: models.DbConn,
 
 ## Käytetään service patternia
 
-tähän tunkkia service patternista
+20. Lisätään projektiin <i>services</i>-package
+
+21. Lisätään <i>services</i>-packageen kaksi tiedostoa <i>user_service_base.py</i> ja <i>user_service_sqlalchemy.py</i>
+
+```py
+
+# user_service_base.py
+
+import abc
+
+# perimällä abc.ABC:n tkeee UserServiceBase:sta abstraktin luokan
+
+class UserServiceBase(abc.ABC):
+    # abstraktien luokkein kaikki metodit merkitään
+    # dekoraattorilla abstractmethod, 
+    # jotta niistä tulee abstrakteja metodeja
+
+    # TÄMÄ VASTAA ASP .NET COREN IUserService-interfacea.
+
+    @abc.abstractmethod
+    # abstraktin metodi heittää aina poikkeuksen NotImplementedError
+    # koska abstraktin metodin ei ole tarkoituskaan sisältää
+    # konkreettista toteutusta
+    def get_all(self):
+        raise NotImplementedError()
+
+```
+
+:::tip abstrakti luokka?
+
+Abstraktista luokasta ei voi tehdä konkreettia instanssia. <strong>Koska Pythonissa ei ole interfacea, käytämme abstraktia luokkaa interfacen sijasta sopimuksena siitä, mitä metodeja user_servicen pitää sisältää</strong>
+
+:::
+
+```py
+
+# user_service_sqlalchemy.py
+
+
+
+import models
+from services.user_service_base import UserServiceBase
+
+# tämä on konkreettinen (ei abstract) luokka, joka perii 
+# abstraktin UserServiceBasen
+class UserServiceSQLAlchemy(UserServiceBase):
+    # tämä on constructor injection käytännössä
+    # ksoka DbConn käyttää Depends-funtkiota
+    # dependency injectioniin, 
+    # aina kun käytämme tätä tietotyyppiä
+    # saamme tietokantayhteyden 
+    def __init__(self, db: models.DbConn):
+        # käytän context-nimistä muuttujaa,
+        # jotta samankaltaisuuden asp .net coreen huomaa
+        # helpommin
+        self.context = db
+
+    def get_all(self):
+        # tässä on konkreettinen toteutus
+        # käyttäjien hakemiselle tietokannasta
+        return self.context.query(models.Users).all()
+
+```
+
+22. Luodaan userserviceä varten uusi typealias
+
+Luo services-kansioon uusi tiedosto <i>dependencies.py</i>
+
+```py
+
+# services/dependencies.py
+
+from typing import Annotated
+
+from fastapi import Depends
+
+import models
+from services.user_service_base import UserServiceBase
+from services.user_service_sqlalchemy import UserServiceSQLAlchemy
+
+# factory pattern käytännössä
+# db: models.DbConn on tietokantayhteys
+
+def init_user_service(db: models.DbConn):
+    # tässä palautetaan konkreettinen instanssi userservicesta
+    # jos datalähde vaihtuu. tee uusi class user_serviceä varten
+    # ja palauta se tästä
+    return UserServiceSQLAlchemy(db)
+
+# käytämme UserService-typealiasta controllerissa
+UserService = Annotated[UserServiceBase, Depends(init_user_service)]
+
+```
+
+23. Otetaan UserService-typealias käyttöön controllerissa
+
+```py
+
+@router.get('/')
+
+def get_all_users(user_service: UserService,
+                  res_handler: UserResListResponseHandler) -> List[UserRes]:
+    users = user_service.get_all()
+    return res_handler.send(users)
+
+```
+
+
+
+## Autentikaatio
+
+### Käyttäjän luominen
+
+24. Asennetaan bcrypt salasnaan hashaysta varten
+
+Lisää requirements.txt:hen bcrypt ja suorita 
+
+```py
+
+python -m pip install -r requirements.txt
+
+```
+
+25. Lisätään users_controlleriin routehandler käyttäjän lisäykselle
+
+```py
+
+@router.post('/')
+def create_user(user_service: UserService, req: AddUserReq, 
+                res_handler: UserResResponseHandler) -> UserRes:
+    user = user_service.create(req)
+    return res_handler.send(user)
+
+```
+
+26. Lisätään dtos-kansion users.py-tiedostoon AddUserReq-luokka
+
+```py
+
+class AddUserReq(BaseModel):
+    UserName: str
+    Password: str
+    Role: str
+
+```
+
+27. Lisäätn response_handlers/user_res_handler.pyhyn routehandlerille sopiva responsehandler
+
+```py
+
+class UserResHandler:
+    def send(self, user):
+        return UserRes(id=user.Id, username=user.UserName, role=user.Role)
+
+
+def init_user_response_handler():
+    return UserResHandler()
+
+UserResResponseHandler = Annotated[UserResHandler, Depends(init_user_response_handler)]
+
+
+```
+
+28. Lisätään UserServiceen create-metodi lisäystä varten
+
+```py
+
+# user_service_base.py
+
+class UserServiceBase(abc.ABC):
+    
+
+    # tämä on uutta, koodi muuten ennallaan
+    @abc.abstractmethod
+    def create(self, req: AddUserReq):
+        raise NotImplementedError()
+```
+
+```py
+
+# user_service_sqlalchemy
+
+class UserServiceSQLAlchemy(UserServiceBase):
+    # muu koodi pysyy ennallaan
+
+    def create(self, req: AddUserReq) -> models.Users:
+
+        user = models.Users(
+            UserName=req.UserName,
+            HashedPassword=bcrypt.hashpw(req.Password.encode('utf-8'), bcrypt.gensalt()),
+            Role=req.Role,
+            Xp=0
+        )
+
+        # bcyrptia käytettäessä meidän ei itse tarvitse tallentaa saltia
+        # erilliseen taulun sarakkeeseen,
+        # bcrypt huolehtii tästä itse
+        user.PasswordSalt = ''.encode('utf-8')
+        self.context.add(user)
+        self.context.commit()
+        return user
+
+```
+
+### Varmistetaan, että käyttäjänimi pysyy yksilöllisenä
+
+29. Muutetaan user_servicen create-metodia
+
+```py
+
+    def create(self, req: AddUserReq) -> models.Users:
+        # tämä on uutta
+        user_exists = self.context.query(models.Users).filter(models.Users.UserName == req.UserName).first()
+        if user_exists is not None:
+            # tämä import tulee fastapista
+            raise HTTPException(status_code=400, detail='User already exists')
+        user = models.Users(
+            UserName=req.UserName,
+            HashedPassword=bcrypt.hashpw(req.Password.encode('utf-8'), bcrypt.gensalt()),
+            Role=req.Role,
+            Xp=0
+        )
+
+        # bcyrptia käytettäessä meidän ei itse tarvitse tallentaa saltia
+        # erilliseen taulun sarakkeeseen,
+        # bcrypt huolehtii tästä itse
+        user.PasswordSalt = ''.encode('utf-8')
+        self.context.add(user)
+        self.context.commit()
+        return user
+
+```
+
+29. Muutetaan controllerin routehandlerin koodia 
+
+Mahdollinen virhe pitää käsitellä
+
+```py
+
+@router.post('/')
+def create_user(user_service: UserService, req: AddUserReq,
+                res_handler: UserResResponseHandler) -> UserRes:
+    try:
+        user = user_service.create(req)
+        return res_handler.send(user)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))s
+
+```
+
+### Login
+tähän login-juttuja
+
+
+
+
 
 ### Dependency Injection
 
