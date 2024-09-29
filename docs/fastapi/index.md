@@ -898,7 +898,183 @@ def create_user(user_service: UserService, req: AddUserReq,
 ```
 
 ### Login
-tähän login-juttuja
+
+30. Lisätään user_service_baseen <i>login</i>-metodi
+
+```py
+
+@abc.abstractmethod
+    def login(self, req: LoginReq) -> str:
+        raise NotImplementedError()
+
+```
+
+LoginReq-luokka sisältää usernamen ja password ja metodi palauttaa merkkijonona access_tokenin
+
+
+31. Tehdään nyt uudet DTOsit kirjautumista varten
+
+```py
+
+# LoginReq
+
+class LoginReq(BaseModel):
+    username: str
+    password: str
+
+```
+
+```py
+
+# LoginRes
+
+class LoginRes(BaseModel):
+    token: str
+
+
+```
+
+Lähetämme palvelimelle käyttäjätunnuksen ja salasanan. Jos nämä ovat oikein, luomme JWT tokenin ja palautamme sen LoginRes-tyyppisenä objektina, jossa on merkkijono Token
+
+
+32. Luodaan konkreettinent toteutus user_serviceen login-metodista
+
+```py
+
+def login(self, req: LoginReq, token: TokenToolBase) ->     fstr:
+    user = self.context.query(models.Users).filter(models.Users.UserName == req.username).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail='User not found')
+
+    if bcrypt.checkpw(req.password.encode('utf-8'), user.HashedPassword):
+        return token.create_token({'sub': user.Id, 'username': user.UserName, 'iat': datetime.now().timestamp(),
+                                    'exp': datetime.now().timestamp() + (3600 * 24 * 7)}, _key='supersecret')
+    return ""
+
+
+```
+
+## Autorisointi
+
+FastAPIssa, toisin kuin ASP .NET Core-projektissamme, ei ole valmiina authorize-attribuutteja / dekoraattoreita tai middleware, tehdään sellainen itse
+
+Luodaan oma policy, jolla tarkistetaan, onko käyttäjä kirjautunut sisään
+
+33. Luodaan <i>policies</i>-package projektin juureen ja sinne tiedosto <i>authorize.py</i>
+
+```py
+
+from typing import Annotated
+
+from fastapi import HTTPException, Depends
+from starlette import status
+from starlette.requests import Request
+
+import models
+from services.dependencies import UserService
+from tools.dependencies import TokenTool
+
+
+def get_logged_in_user(user_service: UserService, token: TokenTool, req: Request):
+    token_from_header = req.headers.get('Authorization')
+    if token_from_header is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    header_parts = token_from_header.split(' ')
+    if len(header_parts) != 2:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    if header_parts[0] != 'Bearer':
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    claims = token.validate_token(header_parts[1])
+    # tämä metodi puuttuu user_sevicesta
+    logged_in_user = user_service.get_user_by_id(claims['sub'])
+    if logged_in_user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    return logged_in_user
+
+
+LoggedInUser = Annotated[models.Users, Depends(get_logged_in_user)]
+
+
+
+```
+
+34. Lisätään user_serviceen metodi, jota get_logged_in_userissa käytetään
+
+```py
+
+# user_service_base.py
+
+class UserServiceBase(abc.ABC):
+    @abc.abstractmethod
+    def get_all(self) -> List[Users]:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def create(self, req: AddUserReq) -> Users:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def login(self, req: LoginReq, token: TokenToolBase) -> str:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_user_by_id(self, user_id: int) -> Users:
+        raise NotImplementedError()
+
+```
+
+```py
+
+# user_service_sqlalchemy.py
+
+class UserServiceSQLAlchemy(UserServiceBase):
+    
+
+    # muut metodit pysyvät ennallaan
+    def get_user_by_id(self, user_id: int) -> Users:
+        return self.context.query(Users).filter(Users.Id == user_id).first()
+
+```
+
+35. Lisätään users_controlleriin routehandler, joka käyttää LoggedInUseria
+
+```py
+
+@router.get('/account')
+async def get_account(logged_in_user: LoggedInUser, res_handler: UserResResponseHandler) -> UserRes:
+    return res_handler.send(logged_in_user)
+
+```
+
+Tähän samaan tyyliin voi luoda muitakin authorization policyja, kuten esim. XP-esimerkissä ASP .Net Coren puolella.
+
+Jos et tarvitse sisäänkirjautuneen käyttäjän, tai minkään muunkaan riippuvuuden tietoja routehandlerissa, vaan haluat vain varmistaa, että käyttäjä on kirjautunut sisään, voit käyttää dependencya näin
+
+```py
+
+@router.get('/account/xp', dependencies=[Depends(get_logged_in_user)])
+async def get_account_xp() -> str:
+    return "OK"
+
+```
+
+## Middlewaret
+
+Middlewaret toimivat samoin kuin ASP .Net Coressa, eli ne liitetään auatomaattisesti mukaan kaikkiin requesteihin. Tehdään lokitus-middleware, joka lokittaa kaikkien pyyntöjen urlit
+
+```py
+
+# main.py
+
+@app.middleware('http')
+async def log_urls(request: Request, call_next):
+
+    print("logging", request.url)
+    return await call_next(request)
+
+```
+
+
 
 
 
