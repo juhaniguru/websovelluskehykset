@@ -305,7 +305,16 @@ Peritytyminen on yksi olio-ohjelmointikielten kulmakivistä. Tässäkin tehtäv�
 
 ### Tehtävä 2
 
-Jatka tuntiharjoitusta ja tee loput <i>CRUD-toiminnallisuudet</i> käyttäjille ja tuotteille. Käytä MVC-suunnittelumallia, repository-mallin kanssa yhdessä ja restful routingin periaatteita. Tee CRUD sekä  MySQL:lle että Postgrelle.
+Jatka tuntiharjoitusta ja tee loput <i>CRUD-toiminnallisuudet</i> käyttäjille ja tuotteille. Käytä MVC-suunnittelumallia, repository-mallin kanssa yhdessä ja restful routingin periaatteita. Tee CRUD sekä  MySQL:lle että Postgrelle*.
+
+:::tip (*
+
+Huomaa, että tehtävässä sanotaan: "Tee CRUD sekä MySQL:lle että Postgrelle. 
+Se ei tarkoita välttämättä sitä, että sekä Postgrelle, että MySQL:lle on pakko tehdä omat repositoriot. Jos haluat käyttää tässä tehtävässä constructor injectionia pärjäät yhdellä repositoriolla / model-luokka. 
+
+<strong>Constructor injectionin käyttö on tässä vaiheessa kuitenkin täysin vapaaehtoista, koska sitä ei välttämättä ole kaikkien ryhmien kanssa ehditty käydä vielä läpi</strong>
+
+:::
 
 :::tip Mikä CRUD?
 
@@ -335,6 +344,8 @@ Tämä on hieman haastavampi tehtävä. Jatka tehtävää 2. ja tee lisäksi rep
 :::info Koska tämä ei ole tietokantakurssi
 
 emme käytä aikaa yhdessä tunnilla siihen, jos ei ole tarvetta <strong>Jos sinulle ei ole aiempaa kokemusta MongoDB:stä, kerro siitä. Voin tehdä videon / jakaa aiemmilta opintojaksoilta materiaalia.</strong>
+
+Katso apuja <a href="https://juhaniguru-tiedonhallinta.onrender.com/nosql/#komentoja">täältä</a>
 
 :::
 
