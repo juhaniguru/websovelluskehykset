@@ -134,7 +134,7 @@ Jatka verkkokauppa-tehtävää jonka teet tehtävissä 6 ja 7. Voit valita itse 
       <td>Oman avoimen tilauksen poisto</td>
       <td>10</td>
       <td>DELETE::/api/v1/account/orders/{id}</td>
-      <td>Ainoastaan sisäänkirjautuneelle moderator-roolin käyttäjälle</td>
+      <td>Ainoastaan sisäänkirjautuneelle käyttäjälle</td>
       <td>Tilauksen tekemisen jälkeen ne pysyvät avoimina kunnes moderator vahvistaa ne. Käyttäjä voi poistaa vielä oman avoimen tilauksen</td>
     </tr>
     <tr>
