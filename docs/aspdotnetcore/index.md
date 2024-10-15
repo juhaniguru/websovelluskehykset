@@ -2566,6 +2566,8 @@ public class Ticket
     // siitä ei tule oikeasti saraketta tietokantatauluun
     // vaan se on sitä varten, 
     // että jokaisesta tiketista saadaan siihen kiinnitetyn käyttäjän tiedot
+
+    // tämä tarvitaan, jotta lazy loading toimii
     public virtual AppUser? User { get; set; }
 }
 
@@ -2655,6 +2657,31 @@ EF Coressa voit hakea relatiiivisen datan useamalla eri tavalla.
 
 #### Lazy loading
 
+:::tip Jos käytät lazy loadingia
+Ole varovainen, sillä kyselyjen määrä voi kasvaa suureksi huomaamatta. On myös todennäköistä, että varsinkin layzloadingin kanssa saat aikaiseksi cirular object cyclen
+
+:::
+
+:::tip Mikä circular object cycle?
+
+Tämä tapahtuu esim. jos sinulla on EF Coressa relaatio kahden modelin välillä (esim. Ticket ja User), jos palautat käyttäjän tiedot, lazy loading hakee autom. kaikki käyttäjän ticketit ja kaikkien ticketien omistajat (palaa siis takaisin käyttäjiin käyden mutkan ticket-modelissa). <i>Tässä vaiheessa saat object cyclen exceptionin</i>
+
+:::
+
+:::tip Miten korjata object cycle?
+
+- Älä käytä lazy loadingia, vaan korvaa se eksplisiittisellä tai eager loadingilla, jolloin voit itse määrätä paremmin siitä,milloin relatiivinen data haetaan
+
+- Älä palauta routehandlereista model-classeja, vaan Dtos-objekteja.
+
+Kun käytät Dtos-objekteja routehandlereina response-tyyppeinä, voit itse määrittää, mitä tietoa niistä näytetään
+
+<strong>Model-classien instansseja voi palauttaa repositorioista ja service-layereiden metodeista, mutta ei kannata ikinä palauttaa niitä routehandlerista käyttäjälle viewiin, koska modelissa on monesti arkaluontoista tietoa, jota ei käyttäjälle haluta näyttää (esim. salasana)</strong>
+
+<i>Jos tyyppimuunnokset model classeista dtos-classeiksi ovat työläitä, voit käyttää AutoMapper-pakettia</i>
+
+:::
+
 Lazy loading tarkoitaa sitä, että relatiivista dataa ei haeta automaattisesti yhdellä kyselyllä, vaan ainoastaan silloin, kun sitä tarvitaan.
 
 Lazy loading on yleensä kätevä, koska se pienentää ensimmäisen kyselyn datamäärää ja voi näin nopeuttaa sitä, mutta toisaalta, koska relatiivinen data haetaan ainoastaan tarvittaessa, se lisää yksittäisten pienten kyselyjen määrää.
@@ -2708,6 +2735,10 @@ builder.Services.AddDbContext<DataContext>(opt =>
 
 ```
 
+### Many-to-many relaatio
+
+Tästä esimerkki sitten, kun käydään projektin tietokanta läpi
+
 #### Eager loading
 
 
@@ -2737,9 +2768,149 @@ var tickets = context.Entry(user).Collection(u => u.Tickets).Load();
 
 ```
 
+## Automapper
+
+korjataan UsersControllerin GetAllUsers-routehandlerin koodi
+
+```cs
+
+// Se näyttää nyt tältä
+
+public async Task<ActionResult<List<AppUser>>> GetAllUsers()
+        {
 
 
 
+            var users = await service.GetAll();
+
+            // koska metodi palauttaa ActionResultin, joka sisältää listan AppUser-luokan instansseja, se tarkoittaa, että myös salasana näytetään tuloksessa
+            return Ok(users);
+
+        }
+
+```
+
+Tämän ongelman voi ratkaista kahdella tavalla, automapperin avulla ja ilman
+
+Käytetään kumpaa ratkaisua tahansa, luodaan ensin Dtos-objekti käyttäjästä, jolla ei ole salasanaa
+
+### Ilman automapperia
+
+```cs
+
+public async Task<ActionResult<List<UserRes>>> GetAllUsers()
+        {
+
+
+
+            var users = await service.GetAll();
+            var response = new List<UserRes>();
+            // tässä response-listaan laitetaan
+            // jokaisesta käyttäjästä objekti UserRes, jolla ei ole salasanaa
+            foreach (AppUser user in users)
+            {
+                response.Add(new UserRes
+                {
+                    UserName = user.UserName,
+                    Id = user.Id,
+                    Role = user.Role
+
+                });
+            }
+            return Ok(response);
+
+        }
+
+```
+### Automapperin avulla
+
+#### Asennetaan automapper
+
+Hae Nugetilla Automapper-paketti ja asenna  se APIin
+
+
+
+![aspnetcore](./images/29.png)
+
+#### Luodaan Profiles-kansio API-kansion alle ja sinne UserProfile-tieodsto
+
+```cs
+
+using System;
+using API.DTOs;
+using API.Models;
+using AutoMapper;
+
+namespace API.Profiles;
+
+public class UserProfile : Profile
+{
+    public UserProfile()
+    {
+        // tässä määritellään, mistä-> mihin mäppäys tehdään
+        // eli pystymme nyt luomaan automapperin avulla automaattisesti
+        // appuser-tyyppisistä instansseista UserRes-tyyppisiä instansseja
+        CreateMap<AppUser, UserRes>();
+    }
+}
+
+```
+
+#### Otetaan profile käyttöön
+
+```cs
+
+// Program.cs
+
+var mapperConfig = new MapperConfiguration(mc =>
+{
+    // jos lisäät uusia profiileja, lisää ne tähän
+    mc.AddProfile(new UserProfile());
+});
+
+// luodaan uusi mapper aiemmin tehdyllä konfiguraatiolla
+IMapper mapper = mapperConfig.CreateMapper();
+// voidaan käyttää singletonia (kaikki mapperit kaikissa controllereissa käyttävät samaa)
+builder.Services.AddSingleton(mapper);
+
+```
+
+#### Mennään nyt UsersControlleriin käyttämään mapperia
+
+```cs
+
+private readonly IMapper mapper;
+        public UsersController(IUserService _service, ITicketService _tickets, ILogger<UsersController> _logger, IMapper _mapper)
+        {
+            logger = _logger;
+            service = _service;
+            ticketsService = _tickets;
+            // käytetään dependency injectionia, jotta saadaan mapper käyttöön controllerissa
+            mapper = _mapper;
+
+
+        }
+
+
+        [HttpGet]
+        public async Task<ActionResult<List<UserRes>>> GetAllUsers()
+        {
+
+
+
+            var users = await service.GetAll();
+            // sanotaan mapperille, että mäppää users-muuttuja listaksi UserRes-instansseja
+            // koska users-muuttua on lista AppUser-objekteja, pitää mapperille antaa myös lista 
+
+            return Ok(
+                mapper.Map<List<UserRes>>(users)
+            );
+
+        }
+
+
+
+```
 
 
 
