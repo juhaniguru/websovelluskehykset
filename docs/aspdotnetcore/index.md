@@ -2737,7 +2737,126 @@ builder.Services.AddDbContext<DataContext>(opt =>
 
 ### Many-to-many relaatio
 
-Tästä esimerkki sitten, kun käydään projektin tietokanta läpi
+Projektin tietokannassa on välitaulu ordersproducts
+
+```cs
+
+// Order.cs model-luokka
+
+
+public class Order
+{
+    public int Id { get; set; }
+    public required DateTime CreatedDate { get; set; }
+    public DateTime? ConfirmedDate { get; set; } = null;
+
+    public DateTime? RemovedDate { get; set; } = null;
+    public required string State { get; set; }
+    public int CustomerId { get; set; }
+    public virtual AppUser? Customer { get; set; }
+
+    public int? HandlerId { get; set; } = null;
+
+    public virtual AppUser? Handler { get; set; }
+    // tämä on many-to-many relaation toinen pää (1:n)
+    public virtual ICollection<OrderProduct> OrderProducts { get; set; } = [];
+
+```
+
+```cs
+// Product model-luokka
+
+public class Product
+{
+    public int Id { get; set; }
+    public required string Name { get; set; }
+    public string? Description { get; set; }
+    public required int CategoryId { get; set; }
+
+    public required int UnitPrice { get; set; }
+
+    public virtual Category? Category { get; set; }
+    // tämä on many-to-many relaation toinen pää (1:n)
+    public virtual ICollection<OrderProduct> OrderProducts { get; set; } = [];
+
+
+}
+
+
+```
+
+```cs
+
+// orderproduct model-luokka
+
+
+// välitaulun model
+
+public class OrderProduct
+{
+
+    public int OrderId { get; set; }
+
+    public int ProductId { get; set; }
+    public required int UnitCount { get; set; }
+    public required int UnitPrice { get; set; }
+
+    public virtual Order? Order { get; set; }
+    public virtual Product? Product { get; set; }
+}
+
+```
+
+```cs
+
+// DataContext
+
+protected override void OnModelCreating(ModelBuilder builder)
+    {
+        builder.Entity<Category>(entity =>
+        {
+            entity.HasIndex(c => c.Name).IsUnique();
+        });
+
+        builder.Entity<OrderProduct>()
+            // ASP .net Core pohjautuu nimeämiskäytäntöihin
+            // jokaisen modelin Id-propertysta tehdään oletuksena taulun perusavain
+            // kun kyseessä on välitaulu, merkataan molempien päätaulujen viiteavaimet 
+            // perusavaimeksi
+            .HasKey(op => new
+            {
+                op.OrderId,
+                op.ProductId
+            });
+
+        builder.Entity<Order>()
+        .HasOne(o => o.Customer)
+        .WithMany(c => c.OrdersOwned)
+        .HasForeignKey(o => o.CustomerId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Order>()
+        .HasOne(o => o.Handler)
+        .WithMany(h => h.OrdersHandled)
+        .HasForeignKey(o => o.HandlerId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+
+        // relaatiot välitaulun ja päätetaulujen välillä
+        builder.Entity<OrderProduct>()
+        .HasOne(op => op.Order)
+        .WithMany(o => o.OrderProducts)
+        .HasForeignKey(op => op.OrderId);
+
+        builder.Entity<OrderProduct>()
+        .HasOne(op => op.Product)
+        .WithMany(p => p.OrderProducts)
+        .HasForeignKey(p => p.ProductId);
+
+
+    }
+
+```
 
 #### Eager loading
 

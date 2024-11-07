@@ -161,7 +161,106 @@ Jatka verkkokauppa-tehtävää jonka teet tehtävissä 6 ja 7. Voit valita itse 
   </tbody>
 </table>
 
+### Tietokanta
 
+
+![info](./images/image.png)
+
+### Orders
+
+Taulu sisältää tilauksen tiedot. Tästä taulusta löytyvät ostoskorin tiedot sekä myös vahvistetut tilaukset, vain State-sarakkeen arvo muuttuu
+
+- Id 
+  * peusavain
+- CreatedData
+  * DateTime merkkijonona. Tämä on se aika, kun käyttäjä lisää ensimmäisen tuotteen ostoskoriin
+
+- CustomerId
+  * viiteavain, joka viittaa users-tauluun. Vain sisäänkirjautunut käyttäjä voi lisätä tuotteita ostoskoriin ja tehdä tilauksen
+
+- ConfirmedDate
+  * DateTime merkkjonona. Tähän kenttään merkataan se aika, kun tilaus on vahvistettu
+
+- RemovedDate
+  * DateTime merkkijonona. Voit tehdä tilauksen poiston loogisena (soft deletenä) poistona tai fyysisenä (hard deletenä). JOs toteutat soft deleten, riviä ei oikeasti poisteta tietokannasta, vaan riville merkataan RemovedDate-sarakkeeseen poistohetki. Jos teet hard deleten, rivi poistetaan oikeasti
+
+- HandlerId
+  * Viitevain, joka viittaa users-tauluun. Tähän sarakkeeseen tulee tilauksen vahvistaneen käyttäjän Id
+
+- State
+  * tekstikenttä, jolla määritellään tilauksen eri vaiheet
+  * cart-state: jos tila on cart-state, tuotteita ei ole tilattu, eikä tilausta vahvistettu. Tilaus on vielä "ostoskorissa"
+  * ordered-state: Kun käyttäjä suorittaa tilauksen loppuun, sen tilaksi tulee ordered-state
+  * confirmed-state: Kun käyttäjä on ensin suorittanut tilauksen loppuun, ja työntekijä vahvistaa sen, tulee tilaksi confirmed-state
+
+
+### Products
+
+Tähän tauluun tallennetaan tuotetiedot
+- Id
+  * perusavain
+- Name
+  * tuotteen nimi
+- CatgoryId
+  * Viiteavain, joka viittaa categories-taulun Id-sarakkeeseen
+
+- UnitPrice
+  * tuotteen hinta (sentteinä)
+
+- Description
+  * Tuotteen vapaaehtoinen kuvaus
+
+### Categories
+
+Tässä taulussa on kateogorioiden tiedot
+
+- Id
+  * perusavain
+- Name
+  * kategorian nimi
+- UserId
+  * viiteavain, joka viittaa
+
+- Decription
+  * tekstikenttä, jossa vapaaehtoinen kuvaus kateogriasta
+
+
+### Users
+- Id
+  * perusavain
+- UserName
+  * tekstikenttä, jossa käyttäjän käyttäjänimi. Tätä tarvitaan, kun kirjaudutaan sisään
+
+- Role
+  * tekstikenttä, joka määrittää käyttäjän roolin
+  * customer: normaali asiakaskäyttäjä
+  * admin: pääkäyttäjä
+  * moderator: käyttäjä joka hallinoi tilauksia
+
+- PasswordSalt
+  * satunnainen merkkijono, jota käytetään salasanan hashaykseen
+  * jos käytät Pythonia ja bcyrptia, tätä saraketta ei tarvita
+  * jos teet ASP. .net Corela, voit tallentaa saltin tähän sarakkeeseen
+
+- HashedPassword
+  * hashatyn salasanan kenttä
+
+### OrdersProducts
+
+Tämä on välitaulu (many-to-many), joka yhdistää tilausket ja niiden tuotteet. Koska yhdessä tilauksessa voi olla monta tuotetta ja yksi tuote voi olla monessa tilauksessa, tarvitaan ns. välitaulu.
+
+- OrderId
+  * perusavain ja viiteavain, joka viittaa Orders-tauluun
+
+- ProductId
+  * perusavain ja viitevain, joka viittaa Products-tauluun
+
+- UnitCount
+  * kokonaislukukenttä, joka määrittää, kuinka monta kappaletta kutakin tuotetta on tilauksessa
+
+- UnitPrice
+  * tuotteen yksikköhinta tilauksessa kokonaislukuna (senttejä)
+  * tämä on tarkoituksellinen toisto Products-taulun UnitPrice-sarakkeesta. Tuotteen yksikköhinta kaupassa voi olla eri kuin se mitä siitä maksetaan tilaushetkellä (esim. tuotetta koskevat kamppanja-alennukset yms. voivat vaikuttaa hintaan)
 
 
 ## Yksittäiset tehtävät
