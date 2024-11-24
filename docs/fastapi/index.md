@@ -1113,3 +1113,170 @@ Tässä esimerkissä kun db_connection-muuttuja luodaan, sen tietotyypiksi tulee
 ### Tehtävä 7.
 
 Tee <a href="/aspdotnetcore/#tehtava-6">Tehtävä 6</a> FastAPilla
+
+## AutoMapper
+
+FastAPI:ssa ei ole .netin AutoMapper-tyylistä pakettia, jolla modelobjektit saa näppärästi tyyppimuunnettua Dto-instansseiksi, mutta voimme tehdä sellaisen itse
+
+1. Luodaan mapper-kansio
+
+2. Luo sinne base_profile.py
+
+BaseProfile on yliluokka, jonka kaikki profilet perivät. 
+Se sisältää kaksi metodia, map ja map_list
+
+```py
+
+import abc
+
+
+from pydantic import BaseModel
+
+
+class BaseProfile(abc.ABC):
+    @abc.abstractmethod
+    def map(self, item) -> BaseModel:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def map_list(self, data: list) -> List[BaseModel]
+        raise NotImplementedError()
+```
+
+3. Luodaan user_profile.py
+
+Tämä tiedosto sisältää user-kohtaisen tyyppimuunnoksen
+
+```py
+
+import inspect
+from typing import Type, List
+
+from pydantic import BaseModel
+
+import models
+from mapper.base_profile import BaseProfile
+
+
+class UserProfile(BaseProfile):
+    # Miksi exclude on __init__:n ulkopuolella?
+    # initin ulkopuolella olet jäasenmuuttujat ovat staattisia (samoja kaikille instansseilel)
+    exclude = ['HashedPassword', 'PasswordSalt', 'metadata', 'registry']
+
+    # Type[BaseModel] tarkoittaa, että dst_type-muuttuja on itse tietotyyppi, eikä BaseModel-tietotyyppinen muuttuja (instanssi)
+    # BaseModel kattaa kaikki meidän Dto-objektit, koska ne kaikki perivät Pydanticin BaseModel-luokan
+    def __init__(self, dst_type: Type[BaseModel]):
+        self.dst_type = dst_type
+
+    # yksittäisen objektin muuttaminen
+    def map(self, data: models.Users):
+        significant_vars = self._get_significant_vars(data)
+        # tässä luodaan self.dst_type:n tyyppinen instanssi alukuperäisen model instanssin tiedoilla
+        # ja palautetaan se
+        user_dto = self.dst_type(**significant_vars)
+
+        return user_dto
+    # listan objekteja muuttaminen
+    def map_list(self, data: List[models.Users]):
+        items = []
+
+        for row in data:
+            significant_vars = self._get_significant_vars(row)
+            # tässä luodaan self.dst_type:n tyyppinen instanssi alukuperäisen model instanssin tiedoilla
+            # ja lisätään se lisaan
+            items.append(self.dst_type(**significant_vars))
+        return items
+
+
+    def _get_significant_vars(self, data):
+        fields = {}
+        # inspect.getmembetrs(data) hakee kaikki datan sisältämät muuttujat ja metodit. Ne ovat dictionaryssa
+
+        for key, value in inspect.getmembers(data):
+            # jos muuttuja  on private (alkaa __ tai _) se jätetään listauksesta ulkopuolelle
+            # samoin, jos member on metodi (callable)
+            # samoin jos muuttuja on exclude-listassa
+            if not key.startswith('__') and not key.startswith('_') and not callable(
+                    value) and key not in self.exclude:
+                # lisätään fields-dictionaryyn kaikki julkiset muuttujat sekä niiden tyypit
+                # koska tietokannassa kentät ovat CamelCasingilla, muutetaan ne alkamaan pienillä kirjaimilla
+
+                fields[key.lower()] = type(value)
+
+
+        v = vars(data)
+        significant_vars = {}
+        for key, value in v.items():
+            # jos objektin muuttuja ei ole fields-dictionaryssa, sitä ei oteta listaukseen mukaan
+            # eli hypätään se yli
+            if key.lower() not in fields:
+                continue
+            significant_vars[key.lower()] = value
+        return significant_vars
+```
+
+4. Luodaan profile_factory.py
+
+Tähän tiedostoon lisätään kaikki profiilit tyyppimuunnoksia varten
+
+```py
+
+from typing import Type
+
+
+from pydantic import BaseModel
+
+
+from mapper.user_profile import UserProfile
+
+
+def create_user_profile(_type: Type[BaseModel]):
+    return UserProfile(_type)
+```
+
+5. Luodaan mapper.py
+
+Tämä tiedosto sisältää mapper-luokan, joka käyttää kaikkia profiileja
+
+```py
+
+from typing import Annotated
+
+from fastapi.params import Depends
+
+from dtos.users import UserDto
+from mapper.base_profile import BaseProfile
+from mapper.profile_factory import create_user_profile
+
+
+class Mapper:
+    # Mapper-luokka sisältää kaikki profile-objektit, sekä map-metodin
+    # jossa käytetään profiilikohtaista map / map_list-metodia
+    def __init__(self, profiles: dict[str: BaseProfile]) -> None:
+        self.profiles = profiles
+
+    def map(self, _type, data):
+        if _type not in self.profiles.keys():
+            raise Exception('Profile missing')
+
+        if isinstance(data, list):
+            return self.profiles[_type].map_list(data)
+        else:
+            return self.profiles[_type].map(data)
+
+
+# factory mapperin luomiseen
+def create_mapper() -> Mapper:
+    # kun sinulle tulee lisää profiileja, lisää ne tähän
+    profiles = {
+        # UserDto no tietotyyppi, johon tällä profiililla (user_dto) pystyy mäppäämään
+        'user_dto': create_user_profile(UserDto)
+    }
+    return Mapper(profiles)
+
+# luodaan Mapperille typealias, jota voidaan käyttää controllerissa
+ResponseMapper = Annotated[Mapper, Depends(create_mapper)]
+
+
+
+```
