@@ -1280,3 +1280,18 @@ ResponseMapper = Annotated[Mapper, Depends(create_mapper)]
 
 
 ```
+
+6. Käytetään mapperia controllerissa
+
+```py
+
+# users_controller
+
+@router.get('/')
+# tässä on käytössä ResponseMapper-typealias, joka äsken luotiin
+async def get_users(service: UserService, mapper: ResponseMapper) -> List[UserDto]:
+    users = service.get_all()
+    # näin käytetään mapperiä
+    return mapper.map('user_dto', users)
+
+```
