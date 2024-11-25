@@ -861,8 +861,8 @@ class UserServiceSQLAlchemy(UserServiceBase):
         # tämä on uutta
         user_exists = self.context.query(models.Users).filter(models.Users.UserName == req.UserName).first()
         if user_exists is not None:
-            # tämä import tulee fastapista
-            raise HTTPException(status_code=400, detail='User already exists')
+            # tätä exception tyyppiä meillä ei vielä ole
+            raise UsernameTakenException('username already taken')
         user = models.Users(
             UserName=req.UserName,
             HashedPassword=bcrypt.hashpw(req.Password.encode('utf-8'), bcrypt.gensalt()),
@@ -937,22 +937,131 @@ class LoginRes(BaseModel):
 Lähetämme palvelimelle käyttäjätunnuksen ja salasanan. Jos nämä ovat oikein, luomme JWT tokenin ja palautamme sen LoginRes-tyyppisenä objektina, jossa on merkkijono Token
 
 
-32. Luodaan konkreettinent toteutus user_serviceen login-metodista
+32. Luodaan konkreettinen toteutus user_serviceen login-metodista
 
 ```py
 
-def login(self, req: LoginReq, token: TokenToolBase) ->     fstr:
-    user = self.context.query(models.Users).filter(models.Users.UserName == req.username).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail='User not found')
+    def login(self, req: LoginReqDto, token: TokenToolBase) -> str:
+        user = self.context.query(models.Users).filter(models.Users.UserName == req.username).first()
+        if user is None:
+            raise NotFoundexception('user not found')
 
-    if bcrypt.checkpw(req.password.encode('utf-8'), user.HashedPassword):
-        return token.create_token({'sub': user.Id, 'username': user.UserName, 'iat': datetime.now().timestamp(),
-                                    'exp': datetime.now().timestamp() + (3600 * 24 * 7)}, _key='supersecret')
-    return ""
+        if bcrypt.checkpw(req.password.encode('utf-8'), user.HashedPassword):
+            return token.create_token({'sub': user.Id, 'username': user.UserName, 'iat': datetime.datetime.now().timestamp(),
+                                    'exp': datetime.datetime.now().timestamp() + (3600 * 24 * 7)})
+        raise NotFoundexception('user not found')
+
+    def get_all(self) -> List[models.Users]:
+        return self.context.query(models.Users).all()
 
 
 ```
+
+:::info Mikä NotFoundException ja UsernameTakenException?
+
+Käytetään custom exception-tyyppejä ja keskitettyä virheenkäsittelyä, jonka FastAPI mahdollistaa
+
+Lue lisää <a href="#keskitetty-virheenkasittely">täältä</a>
+
+:::
+
+33. Luodaan token_tool_base.py
+
+Tämä tiedosto sisältää abstraktin luokan ja sen abstraktin metodin / metodit tokenin käsittelyä vaten
+
+```py
+
+import abc
+from typing import Any
+
+import models
+
+
+class TokenToolBase(abc.ABC):
+    @abc.abstractmethod
+    def create_token(self, data: dict[str, Any]) -> str:
+        raise NotImplementedError()
+
+```
+
+34. Luodaan konkreettinen SymmetricToken-luokka, joka perii yo. abstraktin luokan
+
+```py
+
+# symmetric_token.py
+
+from typing import Any
+
+import jwt
+
+from tools.token_tool_base import TokenToolBase
+
+
+class SymmetricToken(TokenToolBase):
+    # avain kannattaa oikeasti lukea .env-filusta
+    # tai jostakin muusta vastaavasta tiedostosta, joka ei mene gitiin ikinä
+    def create_token(self, payload: [str, Any]) -> str:
+        token = jwt.encode(payload, key='supersecret', algorithm='HS512')
+
+        return token
+
+
+```
+
+35. Huolehditaan custom exceptoneiden käsittelystä
+
+:::info Mikä NotFoundException ja UsernameTakenException?
+
+Käytetään custom exception-tyyppejä ja keskitettyä virheenkäsittelyä, jonka FastAPI mahdollistaa
+
+Lue lisää <a href="#keskitetty-virheenkasittely">täältä</a>
+
+:::
+
+## Keskitetty virheenkäsittely
+
+FastAPIssa on geneerinen HttpException-tyyppi, jolle voi antaa statuskoodin ja tarkemman virheilmoituksen (detail). Sitä ei kuitenkaan kannata käyttää service-layerissa, koska Servicen on tarkoitus toimia riippumatta sovellusalustasta. Siis servicen pitäisi toimia samoin käytetään sitä sitten web -tai konsolisovelluksessa. Jos laitat statuskoodin servicelayeriin, sillä on merkitystä vain web-sovelluksessa
+
+Siksi kannattaa heittää servicelayerista esim. omia custom-poikkeuksia, ja antaa FastAPIN keskitetyn virheenkäsittelyn huolehtia niistä.
+
+36. luodaan custom_exceptions-paketti
+
+37. Luodaan paketin sisään username_taken_exception.py
+
+```py
+
+class UsernameTakenException(Exception):
+    def __init__(self, message='username taken'):
+        
+        self.message = message
+
+```
+
+38. Luodaan not_found_exception.py
+
+```py
+
+class NotFoundexception(Exception):
+    def __init__(self, message='item not found'):
+        self.message = message
+
+
+```
+
+39. Luodaan main.pyhyn keskitetty virheenkäsittely kaikille tyypeille
+
+```py
+
+@app.exception_handler(NotFoundexception)
+async def not_found(request: Request, exc: NotFoundexception):
+    raise HTTPException(status_code=404, detail=str(exc))
+
+@app.exception_handler(UsernameTakenException)
+async def not_found(request: Request, exc: NotFoundexception):
+    raise HTTPException(status_code=400, detail=str(exc))
+
+```
+
 
 ## Autorisointi
 
@@ -960,7 +1069,7 @@ FastAPIssa, toisin kuin ASP .NET Core-projektissamme, ei ole valmiina authorize-
 
 Luodaan oma policy, jolla tarkistetaan, onko käyttäjä kirjautunut sisään
 
-33. Luodaan <i>policies</i>-package projektin juureen ja sinne tiedosto <i>authorize.py</i>
+40. Luodaan <i>policies</i>-package projektin juureen ja sinne tiedosto <i>authorize.py</i>
 
 ```py
 
@@ -998,7 +1107,7 @@ LoggedInUser = Annotated[models.Users, Depends(get_logged_in_user)]
 
 ```
 
-34. Lisätään user_serviceen metodi, jota get_logged_in_userissa käytetään
+41. Lisätään user_serviceen metodi, jota get_logged_in_userissa käytetään
 
 ```py
 
@@ -1036,7 +1145,7 @@ class UserServiceSQLAlchemy(UserServiceBase):
 
 ```
 
-35. Lisätään users_controlleriin routehandler, joka käyttää LoggedInUseria
+42. Lisätään users_controlleriin routehandler, joka käyttää LoggedInUseria
 
 ```py
 
