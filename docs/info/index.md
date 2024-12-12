@@ -324,11 +324,11 @@ Opintojakson pisteet määräytyvät projektin ja yskittäisten tehtävien omina
   <tbody>
     <tr>
       <td>1</td>
-      <td>50</td>
+      <td>40</td>
     </tr>
     <tr>
       <td>2</td>
-      <td>60</td>
+      <td>50</td>
     </tr>
     <tr>
       <td>3</td>
